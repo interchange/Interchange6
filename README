@@ -2,11 +2,12 @@ NAME
     Interchange6 - Open Source Shop Machine
 
 VERSION
-    0.001
+    0.002
 
 DESCRIPTION
     Interchange6, the Open Source Shop Machine, is the Modern Perl ecosystem
-    for online business.
+    for online business. It uses the DBIx::Class database schema
+    Interchange6::Schema.
 
     This module provides the following APIs:
 

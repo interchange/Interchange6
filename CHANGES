@@ -1,5 +1,11 @@
 Revision history for Interchange6
 
+0.002 Fri Dec 27 09:46:06 2013 CET
+
+    [ENHANCEMENTS]
+
+    * Add users_id method to Interchange6::Cart.
+
 0.001 Sat Nov 30 16:40:37 2013 CET
 
     * Initial release.
