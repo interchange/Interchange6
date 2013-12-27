@@ -471,6 +471,18 @@ sub last_modified {
     return $self->{last_modified};
 }
 
+=head2 users_id
+
+Returns the id of the user if user is logged in.
+
+=cut
+
+sub users_id {
+    my ($self) = @_;
+
+    return $self->{users_id};
+}
+
 =head2 count
 
 Returns the number of different items in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different items).
