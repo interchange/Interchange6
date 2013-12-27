@@ -16,6 +16,7 @@ our $VERSION = '0.001';
 
 Interchange6, the Open Source Shop Machine, is the Modern Perl ecosystem
 for online business.
+It uses the L<DBIx::Class> database schema L<Interchange6::Schema>.
 
 This module provides the following APIs:
 
