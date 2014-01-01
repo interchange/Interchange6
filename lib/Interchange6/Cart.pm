@@ -480,7 +480,7 @@ Returns the id of the user if user is logged in.
 sub users_id {
     my ($self, $users_id) = @_;
 
-    if ($users_id) {
+    if (@_ > 1) {
         # set users_id for the cart
         my %data = (users_id => $users_id);
 
