@@ -478,7 +478,18 @@ Returns the id of the user if user is logged in.
 =cut
 
 sub users_id {
-    my ($self) = @_;
+    my ($self, $users_id) = @_;
+
+    if ($users_id) {
+        # set users_id for the cart
+        my %data = (users_id => $users_id);
+
+        $self->_run_hook('before_cart_set_users_id', $self, \%data);
+
+        $self->{users_id} = $users_id;
+
+        $self->_run_hook('after_cart_set_users_id', $self, \%data);
+    }
 
     return $self->{users_id};
 }
