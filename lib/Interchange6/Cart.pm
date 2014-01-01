@@ -494,6 +494,27 @@ sub users_id {
     return $self->{users_id};
 }
 
+=head2 sessions_id
+
+=cut
+
+sub sessions_id {
+    my ($self, $sessions_id) = @_;
+
+    if (@_ > 1) {
+        # set sessions_id for the cart
+        my %data = (sessions_id => $sessions_id);
+
+        $self->_run_hook('before_cart_set_sessions_id', $self, \%data);
+
+        $self->{sessions_id} = $sessions_id;
+
+        $self->_run_hook('after_cart_set_sessions_id', $self, \%data);
+    }
+
+    return $self->{sessions_id};
+}
+
 =head2 count
 
 Returns the number of different items in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different items).
