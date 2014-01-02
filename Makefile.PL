@@ -13,6 +13,7 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More' => 0,
+        'Test::Warnings' => 0,
         'Moo' => 0,
 	    'Interchange6::Schema'     => 0.004,
     },
