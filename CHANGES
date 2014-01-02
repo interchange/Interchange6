@@ -1,5 +1,12 @@
 Revision history for Interchange6
 
+0.003 Thu Jan  2 12:09:12 2014 CET
+
+    [ENHANCEMENTS]
+
+    * Extend users_id method to allow setting the users id.
+    * Add sessions_id method to Interchange6::Cart.
+
 0.002 Fri Dec 27 09:46:06 2013 CET
 
     [ENHANCEMENTS]
