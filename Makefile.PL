@@ -10,10 +10,12 @@ WriteMakefile(
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'perl')
       : ()),
-    PL_FILES            => {},
-    PREREQ_PM => {
+    PL_FILES            => {}
+    BUILD_REQUIRES => {
         'Test::More' => 0,
         'Test::Warnings' => 0,
+    },
+    PREREQ_PM => {
         'Moo' => 0,
 	    'Interchange6::Schema'     => 0.004,
     },
