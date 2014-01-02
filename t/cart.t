@@ -247,7 +247,7 @@ $cart = Interchange6::Cart->new(run_hooks => sub {
     }
 });
 
-my $warns = warning {$ret = $cart->sessions_id('513457188818705086798161933370395265')};
+$warns = warning {$ret = $cart->sessions_id('513457188818705086798161933370395265')};
 
 ok (ref($warns) eq 'ARRAY' && @$warns == 2,
     "Test number of warnings from set_sessions_id_hook");
