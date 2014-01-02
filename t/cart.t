@@ -5,7 +5,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 40;
+use Test::More tests => 52;
+use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
 
@@ -184,3 +185,78 @@ ok($ret == 0, "Count: $ret");
 
 $ret = $cart->quantity;
 ok($ret == 0, "Quantity: $ret");
+
+# users id
+$cart = Interchange6::Cart->new();
+
+$ret = $cart->users_id;
+ok (! defined($ret), "Users id of anonymous user");
+
+$ret = $cart->users_id(100);
+ok ($ret eq '100', "Return value of users_id setter");
+
+$ret = $cart->users_id;
+ok ($ret eq '100', "Value of users_id after setting it to 100");
+
+$cart = Interchange6::Cart->new(run_hooks => sub {
+    my ($hook, $object, $data) = @_;
+
+    if ($hook eq 'before_cart_set_users_id') {
+        warn "Testing before_set_users_id hook with $data->{users_id}.\n";
+    }
+
+    if ($hook eq 'after_cart_set_users_id') {
+        warn "Testing after_set_users_id hook with $data->{users_id}.\n";
+    }
+});
+
+my $warns = warning {$ret = $cart->users_id(200)};
+
+ok (ref($warns) eq 'ARRAY' && @$warns == 2,
+    "Test number of warnings from set_users_id_hook");
+
+ok ($warns->[0] eq "Testing before_set_users_id hook with 200.\n",
+    "Test warning from before_set_users_id hook.")
+    || diag "Warning: $warns->[0].";
+
+ok ($warns->[1] eq "Testing after_set_users_id hook with 200.\n",
+     "Test warning from after_set_users_id hook.")
+    || diag "Warning: $warns->[1].";
+
+# sessions id
+$cart = Interchange6::Cart->new();
+
+$ret = $cart->sessions_id;
+ok (! defined($ret), "Users id of anonymous user");
+
+$ret = $cart->sessions_id('323460431348215171797029562762075811');
+ok ($ret eq '323460431348215171797029562762075811', "Return value of sessions_id setter");
+
+$ret = $cart->sessions_id;
+ok ($ret eq '323460431348215171797029562762075811', "Value of sessions_id after setting it to 323460431348215171797029562762075811");
+
+$cart = Interchange6::Cart->new(run_hooks => sub {
+    my ($hook, $object, $data) = @_;
+
+    if ($hook eq 'before_cart_set_sessions_id') {
+        warn "Testing before_set_sessions_id hook with $data->{sessions_id}.\n";
+    }
+
+    if ($hook eq 'after_cart_set_sessions_id') {
+        warn "Testing after_set_sessions_id hook with $data->{sessions_id}.\n";
+    }
+});
+
+my $warns = warning {$ret = $cart->sessions_id('513457188818705086798161933370395265')};
+
+ok (ref($warns) eq 'ARRAY' && @$warns == 2,
+    "Test number of warnings from set_sessions_id_hook");
+
+ok ($warns->[0] eq "Testing before_set_sessions_id hook with 513457188818705086798161933370395265.\n",
+    "Test warning from before_set_sessions_id hook.")
+    || diag "Warning: $warns->[0].";
+
+ok ($warns->[1] eq "Testing after_set_sessions_id hook with 513457188818705086798161933370395265.\n",
+     "Test warning from after_set_sessions_id hook.")
+    || diag "Warning: $warns->[1].";
+
