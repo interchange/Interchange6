@@ -2,6 +2,7 @@
 
 package Interchange6::Cart;
 
+use DateTime;
 use strict;
 use warnings;
 
@@ -51,7 +52,7 @@ sub new {
     $class = shift;
     %args = @_;
 
-    my $time = time;
+    my $time = DateTime->now;
 
     $self = {error => '', items => [], modifiers => [],
              costs => [], subtotal => 0, total => 0,
@@ -67,8 +68,15 @@ sub new {
     }
 
     for my $ts (qw/created last_modified/) {
-        if (exists $args{$ts}) {
-            $self->{$ts} = $args{$ts};
+        my $time = $args{$ts};
+        if (defined $time) {
+            if ($time->isa('DateTime')) {
+                $self->{$ts} = $time;
+            }
+            else {
+	            $self->{error} = '$ts must be DateTime object';
+                return;
+            }
         }
     }
 
@@ -257,7 +265,7 @@ sub add {
 
     unless ($ret = $self->_combine(\%item)) {
         push @{$self->{items}}, \%item;
-        $self->{last_modified} = time;
+        $self->{last_modified} = DateTime->now;
     }
 
     # run hooks after adding item to cart
@@ -307,7 +315,7 @@ sub remove {
 	# removing item from our array
 	splice(@{$self->{items}}, $pos, 1);
 
-    $self->{last_modified} = time;
+    $self->{last_modified} = DateTime->now;
 
 	$self->_run_hook('after_cart_remove', $self, $item);
 	return 1;
@@ -368,7 +376,7 @@ sub update {
 	    return;
 	}
 
-    $self->{last_modified} = time;
+    $self->{last_modified} = DateTime->now;
 
 	$self->_run_hook('after_cart_update', $self, $item, $new_item);
 
@@ -399,7 +407,7 @@ sub clear {
     $self->{cache_subtotal} = 1;
     $self->{cache_total} = 1;
 
-    $self->{last_modified} = time;
+    $self->{last_modified} = DateTime->now;
 
     return;
 }
@@ -449,7 +457,7 @@ sub quantity {
 
 =head2 created
 
-Returns the time (epoch) when the cart was created.
+Returns the time (DateTime) when the cart was created.
 
 =cut
 
@@ -461,7 +469,7 @@ sub created {
 
 =head2 last_modified
 
-Returns the time (epoch) when the cart was last modified.
+Returns the time (DateTime) when the cart was last modified.
 
 =cut
 
@@ -654,7 +662,7 @@ sub name {
 	$self->_run_hook('before_cart_rename', $self, $old_name, $_[0]);
 
 	$self->{name} = $_[0];
-    $self->{last_modified} = time;
+    $self->{last_modified} = DateTime->now;
 
 	$self->_run_hook('after_cart_rename', $self, $old_name, $_[0]);
     }
@@ -696,7 +704,7 @@ sub seed {
     # clear cache flags
     $self->{cache_subtotal} = $self->{cache_total} = 0;
 
-    $self->{last_modified} = time;
+    $self->{last_modified} = DateTime->now;
 
     return $self->{items};
 }
