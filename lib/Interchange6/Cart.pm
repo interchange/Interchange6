@@ -40,11 +40,15 @@ has cache_total    => ();
 
 =item costs
 
+Costs such as tax and shipping
+
 =cut
 
 has costs          => ();
 
 =item created
+
+Time cart was created (DateTime object)
 
 =cut
 
@@ -56,6 +60,8 @@ has created        => (
 
 =item error
 
+Last error
+
 =cut
 
 has error => (
@@ -65,6 +71,8 @@ has error => (
 
 =item items
 
+Arrayref of cart items
+
 =cut
 
 has items => (
@@ -73,6 +81,8 @@ has items => (
 );
 
 =item last_modified
+
+Time cart was last modified (DateTime object)
 
 =cut
 
@@ -90,6 +100,8 @@ has modifiers => ();
 
 =item name
 
+Name of cart
+
 =cut
 
 has name      => (
@@ -100,6 +112,8 @@ has name      => (
 
 =item subtotal
 
+Current cart subtotal excluding costs
+
 =cut
 
 has subtotal => (
@@ -109,6 +123,8 @@ has subtotal => (
 );
 
 =item total
+
+Current cart total including costs
 
 =cut
 
@@ -122,10 +138,9 @@ has total => (
 
 =head2 add $item
 
-Add item to the cart. Add item to the cart. Returns item in case of success.
+Add item to the cart. Returns item in case of success.
 
-The item is a hash (reference) which is subject to the following
-conditions:
+The item is an L<Interchange6::Cart::Item> or a hash (reference) which is subject to the following conditions:
 
 =over 4
 
@@ -162,25 +177,57 @@ B<Example:> Add a BMX2012 product to the cart.
 
 sub add {
     my $self = shift;
-    my ( %args, $ret );
+    my $item = $_[0];
 
-    if ( ref( $_[0] ) ) {
+    $self->_set_error(undef);
 
-        # copy args
-        %args = %{ $_[0] };
+    if ( ! $item->isa('Interchange6::Cart::Item;) ) {
+
+        # we got a hash(ref) rather than an Item
+
+        my %args;
+
+        if ( is_HashRef($item) ) {
+
+            # copy args
+            %args = %{ $item };
+        }
+        else {
+
+            %args = @_;
+        }
+
+        try {
+            $item = Interchange6::Cart::Item->new( \%args );
+        }
+        catch {
+            $self->_set_error("failed to create item: $_");
+            return;
+        };
+    }
+
+    # $item is now an Interchange6::Cart::Item
+
+    # cart may already contain an item with the same sku
+    # if so then we add quantity to existing item otherwise we add new item
+
+    if ( grep { $_->sku eq $item->sku } @{$cart->items} ) {
+
+        # change quantity of existing item
+        $self->update( $item );
     }
     else {
-        %args = @_;
-    }
 
-    try {
-        my $item = Interchange6::Cart::Item->new( \%args );
-        return $item;
+        # new sku
     }
-    catch {
-        warn "failed to create item: $_";
-        return;
-    };
+}
+
+=head2 update
+
+
+=cut
+
+sub update {
 }
 
 1;
