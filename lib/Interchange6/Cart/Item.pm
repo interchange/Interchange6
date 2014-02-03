@@ -29,7 +29,7 @@ Unique item identifier.
 =cut
 
 has sku => (
-    is       => 'rw',
+    is       => 'ro',
     isa      => AllOf [ Defined, HasChars, VarChar [32] ],
     required => 1,
 );
@@ -41,7 +41,7 @@ Item name.
 =cut
 
 has name => (
-    is       => 'rw',
+    is       => 'ro',
     isa      => AllOf [ Defined, HasChars, VarChar [255] ],
     required => 1,
 );
@@ -65,7 +65,7 @@ Item price.
 =cut
 
 has price => (
-    is       => 'rw',
+    is       => 'ro',
     isa      => AllOf [ Defined, PositiveNum ],
     required => 1,
 );

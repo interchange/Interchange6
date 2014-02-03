@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 38;
 use Test::Warnings qw/warning :no_end_test/;
 use Test::Exception;
 
@@ -142,3 +142,48 @@ delete $args->{price};
 
 throws_ok { $item = Interchange6::Cart::Item->new($args) }
 qr/Missing.+arg.+price/, "create Item with no price";
+
+# Now test setters & getters
+
+# start by checking that an initial item is good
+
+$args = { sku => 'ABC', name => 'Foobar', price => 42, quantity => 4 };
+
+lives_ok { $item = Interchange6::Cart::Item->new($args) }
+"create clean item";
+
+isa_ok( $item, 'Interchange6::Cart::Item' );
+
+is( $item->sku, 'ABC', "sku is ABC" );
+is( $item->name, 'Foobar', "name is Foobar" );
+is( $item->price, 42, "price is 42" );
+is( $item->quantity, 4, "quantity is 4" );
+
+# try to change sku
+
+dies_ok { $item->sku('new sku') } "should not be able to change sku";
+is( $item->sku, 'ABC', "sku is still ABC" );
+
+# try to change name
+
+dies_ok { $item->name('new name') } "should not be able to change name";
+is( $item->name, 'Foobar', "name is still Foobar" );
+
+# try to change price
+
+dies_ok { $item->price(45) } "should not be able to change price";
+is( $item->price, 42, "price is still 42" );
+
+# change quantity
+
+lives_ok { $ret = $item->quantity(20) } "change quantity";
+is( $ret, 20, "quantity 20 is returned" );
+is( $item->quantity, 20, "item quantity is 20" );
+
+# bad quantity
+
+throws_ok { $ret = $item->quantity(-2) }
+qr/quantity.+is not a positive num/, "try to set negative quantity";
+
+is( $item->quantity, 20, "item quantity is still 20" );
+
