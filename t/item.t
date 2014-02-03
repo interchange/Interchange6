@@ -60,8 +60,8 @@ qr/sku.+not contain any non-space/, "create Item with empty sku";
 
 $args->{sku} = 'X' x 33;
 
-throws_ok { $item = Interchange6::Cart::Item->new($args) }
-qr/sku.+length.+32/, "create Item with over-long sku";
+throws_ok { $item = Interchange6::Cart::Item->new($args) } qr/sku.+length.+32/,
+  "create Item with over-long sku";
 
 # no sku
 
@@ -72,10 +72,11 @@ qr/Missing.+arg.+sku/, "create Item with no sku";
 
 # undef name
 
-$args->{sku} = 'ABC';
+$args->{sku}  = 'ABC';
 $args->{name} = undef;
 
-throws_ok { $item = Interchange6::Cart::Item->new($args) } qr/name.+not defined/,
+throws_ok { $item = Interchange6::Cart::Item->new($args) }
+qr/name.+not defined/,
   "create Item with undef name";
 
 # empty name
@@ -101,7 +102,7 @@ qr/Missing.+arg.+name/, "create Item with no name";
 
 # negative quantity
 
-$args->{name} = 'Foobar';
+$args->{name}     = 'Foobar';
 $args->{quantity} = -2;
 
 throws_ok { $item = Interchange6::Cart::Item->new($args) }
@@ -117,9 +118,10 @@ qr/quantity.+not an integer/, "create Item with non-integer quantity";
 # undef price
 
 $args->{quantity} = 4;
-$args->{price} = undef;
+$args->{price}    = undef;
 
-throws_ok { $item = Interchange6::Cart::Item->new($args) } qr/price.+not defined/,
+throws_ok { $item = Interchange6::Cart::Item->new($args) }
+qr/price.+not defined/,
   "create Item with undef price";
 
 # empty price
@@ -149,15 +151,14 @@ qr/Missing.+arg.+price/, "create Item with no price";
 
 $args = { sku => 'ABC', name => 'Foobar', price => 42, quantity => 4 };
 
-lives_ok { $item = Interchange6::Cart::Item->new($args) }
-"create clean item";
+lives_ok { $item = Interchange6::Cart::Item->new($args) } "create clean item";
 
 isa_ok( $item, 'Interchange6::Cart::Item' );
 
-is( $item->sku, 'ABC', "sku is ABC" );
-is( $item->name, 'Foobar', "name is Foobar" );
-is( $item->price, 42, "price is 42" );
-is( $item->quantity, 4, "quantity is 4" );
+is( $item->sku,      'ABC',    "sku is ABC" );
+is( $item->name,     'Foobar', "name is Foobar" );
+is( $item->price,    42,       "price is 42" );
+is( $item->quantity, 4,        "quantity is 4" );
 
 # try to change sku
 
@@ -177,13 +178,13 @@ is( $item->price, 42, "price is still 42" );
 # change quantity
 
 lives_ok { $ret = $item->quantity(20) } "change quantity";
-is( $ret, 20, "quantity 20 is returned" );
+is( $ret,            20, "quantity 20 is returned" );
 is( $item->quantity, 20, "item quantity is 20" );
 
 # bad quantity
 
-throws_ok { $ret = $item->quantity(-2) }
-qr/quantity.+is not a positive num/, "try to set negative quantity";
+throws_ok { $ret = $item->quantity(-2) } qr/quantity.+is not a positive num/,
+  "try to set negative quantity";
 
 is( $item->quantity, 20, "item quantity is still 20" );
 
