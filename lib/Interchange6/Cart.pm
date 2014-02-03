@@ -22,45 +22,103 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
 Generic cart class for L<Interchange6>.
 
+=head2 CART ATTRIBUTES
+
+=over 11
+
+=item cache_subtotal
+
+=cut
+
+has cache_subtotal => ();
+
+=item cache_total
+
+=cut
+
+has cache_total    => ();
+
+=item costs
+
 =cut
 
 has costs          => ();
-has cache_subtotal => ();
-has cache_total    => ();
+
+=item created
+
+=cut
+
 has created        => (
     is      => 'rw',
     isa     => DateTime,
     default => DateTime->now,
 );
+
+=item error
+
+=cut
+
 has error => (
     is  => 'rwp',
     isa => 'Str',
 );
+
+=item items
+
+=cut
+
 has items => (
     is  => 'rw',
     isa => ArrayRef [ InstanceOf ['Interchange::Cart::Item'] ],
 );
+
+=item last_modified
+
+=cut
+
 has last_modified => (
     is      => 'rw',
     isa     => DateTime,
     default => DateTime->now,
 );
+
+=item modifiers
+
+=cut
+
 has modifiers => ();
+
+=item name
+
+=cut
+
 has name      => (
     is      => 'rw',
     isa     => AllOf [ Defined, HasChars, VarChar [255] ],
     default => CART_DEFAULT,
 );
+
+=item subtotal
+
+=cut
+
 has subtotal => (
     is      => 'rwp',
     isa     => 'Num',
     default => 0,
 );
+
+=item total
+
+=cut
+
 has total => (
     is      => 'rwp',
     isa     => 'Num',
     default => 0,
 );
+
+=back
 
 =head2 add $item
 
