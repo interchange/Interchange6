@@ -44,6 +44,10 @@ Please anticipate API changes in this early state of development.
 
 Stefan Hornburg (Racke), C<racke@linuxia.de>
 
+=head1 CONTRIBUTORS
+
+Peter Mottram C<peter@sysnix.com>
+
 =head1 LICENSE AND COPYRIGHT
 
 Copyright 2011-2013 Stefan Hornburg (Racke).
