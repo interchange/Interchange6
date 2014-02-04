@@ -4,6 +4,7 @@
 
 use strict;
 use warnings;
+use Data::Dumper;
 use DateTime;
 
 #use Test::More tests => 52;
@@ -12,12 +13,13 @@ use Test::Warnings qw/warning :no_end_test/;
 use Test::Exception;
 
 use Interchange6::Cart;
+use Interchange6::Cart::Item;
 
-my ($cart, $item, $ret);
+my ( $args, $cart, $item, $ret, $modified );
 
 # create a DateTime oject for later comparison
 
-my $dt_now = DateTime->now;
+$modified = DateTime->now;
 
 # create a cart and change its name
 
@@ -25,25 +27,82 @@ lives_ok { $cart = Interchange6::Cart->new() } "Create empty cart";
 
 isa_ok( $cart, 'Interchange6::Cart' );
 
-ok($cart->name eq 'main', 'Cart name is main');
+ok( $cart->name eq 'main', 'Cart name is main' );
 
 lives_ok { $ret = $cart->name('discount') } "Change cart name";
-cmp_ok($ret, 'eq', 'discount', "New name was returned");
-cmp_ok($cart->name, 'eq', 'discount', "Cart name is discount");
+cmp_ok( $ret,        'eq', 'discount', "New name was returned" );
+cmp_ok( $cart->name, 'eq', 'discount', "Cart name is discount" );
 
 # created / modified
 
-isa_ok($cart->created, 'DateTime');
-cmp_ok($cart->created, '>=', $dt_now, "creation time: " . $cart->created);
+isa_ok( $cart->created, 'DateTime' );
+cmp_ok( $cart->created, '>=', $modified, "creation time: " . $cart->created );
 
-isa_ok($cart->last_modified, 'DateTime');
-cmp_ok($cart->last_modified, '>=', $dt_now, "last_modified time: " . $cart->last_modified);
+isa_ok( $cart->last_modified, 'DateTime' );
+cmp_ok( $cart->last_modified, '>=', $modified,
+    "last_modified time: " . $cart->last_modified );
+
+# store last_modified for later
+
+$modified = $cart->last_modified;
+sleep 1;
+
+# Items
+
+cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
+
+$args = { sku => 'ABC', name => 'Foobar', price => 42 };
+
+lives_ok { $item = Interchange6::Cart::Item->new($args) }
+"create Interchange::Cart::Item";
+
+lives_ok { $cart->add($item) } "add item to cart";
+
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+
+cmp_ok( $cart->is_empty, '==', 0, "cart should not be empty" );
+
+cmp_ok( $cart->last_modified, '>', $modified,
+    "last_modified updated: " . $cart->last_modified );
+
+$modified = $cart->last_modified;
+sleep 1;
+
+lives_ok { $cart->clear } "clear cart";
+
+cmp_ok( $cart->count, '==', 0, "cart count should be zero" );
+
+cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
+
+cmp_ok( $cart->last_modified, '>', $modified,
+    "last_modified updated: " . $cart->last_modified );
+
+$modified = $cart->last_modified;
+sleep 1;
+
+# add has item to cart
+
+lives_ok { $cart->add( %{$args} ) } "add item hash to cart";
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+lives_ok { $cart->clear } "clear cart";
+
+# add has item to cart
+
+lives_ok { $cart->add( $args ) } "add item hashref to cart";
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+
+# add item a second time
+
+lives_ok { $cart->add( $args ) } "add item hashref to cart again";
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+
+cmp_ok( $cart->last_modified, '>', $modified,
+    "last_modified updated: " . $cart->last_modified );
+
+$modified = $cart->last_modified;
 
 done_testing;
 __END__
-# Items
-$cart = Interchange6::Cart->new(last_modified => 0);
-
 $item = {};
 $ret = $cart->add($item);
 ok(! defined($ret));

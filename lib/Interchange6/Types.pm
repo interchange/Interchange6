@@ -12,6 +12,7 @@ our @EXPORT_OK = ();
 
 my $defs = [
     {
+<<<<<<< HEAD
         name => 'DateAndTime',
         test => sub {
             return $_[0] && blessed( $_[0] ) && ref( $_[0] ) eq 'DateTime';
@@ -31,6 +32,9 @@ my $defs = [
     },
     {
         name => 'NotEmpty',
+=======
+        name => 'HasChars',
+>>>>>>> new cart has working add/count/is_empty/clear
         test => sub { $_[0] =~ /\S/ },
         message => sub { "Must contain some non-space characters." }
     },
