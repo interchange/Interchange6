@@ -33,8 +33,8 @@ Generic cart class for L<Interchange6>.
 =cut
 
 has cache_subtotal => (
-    is => 'rw',
-    isa => Bool,
+    is      => 'rw',
+    isa     => Bool,
     default => 1,
 );
 
@@ -43,8 +43,8 @@ has cache_subtotal => (
 =cut
 
 has cache_total => (
-    is => 'rw',
-    isa => Bool,
+    is      => 'rw',
+    isa     => Bool,
     default => 1,
 );
 
@@ -55,8 +55,8 @@ Costs such as tax and shipping
 =cut
 
 has costs => (
-    is => 'rw',
-    isa => ArrayRef,
+    is      => 'rw',
+    isa     => ArrayRef,
     default => sub { [] },
 );
 
@@ -69,7 +69,7 @@ Read-only attribute.
 
 has created => (
     is      => 'ro',
-    isa     => InstanceOf['DateTime'],
+    isa     => InstanceOf ['DateTime'],
     default => sub { DateTime->now },
 );
 
@@ -80,8 +80,8 @@ Last error
 =cut
 
 has error => (
-    is  => 'rwp',
-    isa => Str,
+    is      => 'rwp',
+    isa     => Str,
     default => '',
 );
 
@@ -94,9 +94,10 @@ Arrayref of Interchange::Cart::Item(s)
 has items => (
     is  => 'rw',
     isa => ArrayRef [ InstanceOf ['Interchange::Cart::Item'] ],
-    default => sub { [] },
+    default     => sub { [] },
     handles_via => 'Array',
-    handles => {
+    handles     => {
+        clear    => 'clear',
         count    => 'count',
         is_empty => 'is_empty',
     },
@@ -110,7 +111,7 @@ Time cart was last modified (DateTime object)
 
 has last_modified => (
     is      => 'rwp',
-    isa     => InstanceOf['DateTime'],
+    isa     => InstanceOf ['DateTime'],
     default => sub { DateTime->now },
 );
 
@@ -214,6 +215,8 @@ sub add {
 
         # we got a hash(ref) rather than an Item
 
+        # TODO: can we use coercion in the attribute instead of this?
+
         my %args;
 
         if ( is_HashRef($item) ) {
@@ -226,9 +229,7 @@ sub add {
             %args = @_;
         }
 
-    my $args = { sku => 'ABC', name => 'Foobar', price => 42 };
-
-        $item = 'Interchange6::Cart::Item'->new( $args );
+        $item = 'Interchange6::Cart::Item'->new(%args);
 
         unless ( blessed($item) && $item->isa('Interchange6::Cart::Item') ) {
             $self->_set_error("failed to create item: $_");
@@ -243,10 +244,181 @@ sub add {
 
     unless ( $ret = $self->_combine($item) ) {
         push @{ $self->items }, $item;
-        $self->_set_last_modified(DateTime->now);
+        $self->_set_last_modified( DateTime->now );
     }
 
     return $item;
+}
+
+=head2 remove $sku
+
+Remove item from the cart. Takes SKU of item to identify the item.
+
+=cut
+
+sub remove {
+    my ( $self, $arg ) = @_;
+    my ( $pos, $found, $item );
+
+    $pos = 0;
+
+    # run hooks before locating item
+    $self->_run_hook( 'before_cart_remove_validate', $self, $arg );
+
+    for $item ( @{ $self->items } ) {
+        if ( $item->sku eq $arg ) {
+            $found = 1;
+            last;
+        }
+        $pos++;
+    }
+
+    if ($found) {
+
+        # run hooks before adding item to cart
+        $item = $self->items->[$pos];
+
+        $self->_run_hook( 'before_cart_remove', $self, $item );
+
+        if ( exists $item->{error} ) {
+
+            # one of the hooks denied removing the item
+            $self->_set_error( $item->{error} );
+            return;
+        }
+
+        # clear cache flags
+        $self->cache_subtotal(0);
+        $self->cache_total(0);
+
+        # removing item from our array
+        splice( @{ $self->items }, $pos, 1 );
+
+        $self->_set_last_modified( DateTime->now );
+
+        $self->_run_hook( 'after_cart_remove', $self, $item );
+        return 1;
+    }
+
+    # item missing
+    $self->_set_error = "Missing item $arg.";
+
+    return;
+}
+
+=head2 update
+
+Update quantity of items in the cart.
+
+Parameters are pairs of SKUs and quantities, e.g.
+
+    $cart->update(9780977920174 => 5,
+                  9780596004927 => 3);
+
+Triggers before_cart_update and after_cart_update hooks.
+
+A quantity of zero is equivalent to removing this item,
+so in this case the remove hooks will be invoked instead
+of the update hooks.
+
+
+=cut
+
+sub update {
+
+    my ( $self, @args ) = @_;
+    my ( $ref, $sku, $qty, $item, $new_item );
+
+    while ( @args > 0 ) {
+        $sku = shift @args;
+        $qty = shift @args;
+
+        unless ( $item = $self->find($sku) ) {
+            die "Item for $sku not found in cart.\n";
+        }
+
+        if ( $qty == 0 ) {
+
+            # remove item instead
+            $self->remove($sku);
+            next;
+        }
+
+        # jump to next item if quantity stays the same
+        next if $qty == $item->{quantity};
+
+        # run hook before updating the cart
+        $new_item = { quantity => $qty };
+
+        $self->_run_hook( 'before_cart_update', $self, $item, $new_item );
+
+        if ( exists $new_item->{error} ) {
+
+            # one of the hooks denied the item
+            $self->_set_error( $new_item->{error} );
+            return;
+        }
+
+        $self->_set_last_modified( DateTime->now );
+
+        $self->_run_hook( 'after_cart_update', $self, $item, $new_item );
+
+        $item->quantity($qty);
+    }
+}
+
+=head2 clear
+
+Removes all items from the cart.
+
+=cut
+
+after clear => sub {
+    my $self = shift;
+    $self->_set_last_modified( DateTime->now );
+};
+
+=head2 find
+
+Searches for an cart item with the given SKU.
+Returns cart item in case of sucess.
+
+    if ($item = $cart->find(9780977920174)) {
+        print "Quantity: $item->{quantity}.\n";
+    }
+
+=cut
+
+sub find {
+    my ( $self, $sku ) = @_;
+
+    for my $cartitem ( @{ $self->items } ) {
+        if ( $sku eq $cartitem->sku ) {
+            return $cartitem;
+        }
+    }
+
+    return;
+}
+
+=head2 quantity
+
+Returns the sum of the quantity of all items in the shopping cart,
+which is commonly used as number of items. If you have 5 apples and 6 pears it will return 11.
+
+    print 'Items in your cart: ', $cart->quantity, "\n";
+
+=cut
+
+sub quantity {
+    my $self = shift;
+    my $qty  = 0;
+
+    for my $item ( @{ $self->{items} } ) {
+        $qty += $item->quantity;
+    }
+
+    return $qty;
 }
 
 sub _combine {
@@ -261,7 +433,7 @@ sub _combine {
             }
 
             $cartitem->quantity( $cartitem->quantity + $item->quantity );
-            $item->quantity($cartitem->quantity);
+            $item->quantity( $cartitem->quantity );
 
             return 1;
         }
@@ -270,48 +442,12 @@ sub _combine {
     return 0;
 }
 
-=head2 update
-
-
-=cut
-
-sub update {
-}
-
-=head2 clear
-
-Removes all items from the cart.
-
-=cut
-
-sub clear {
-    my ($self) = @_;
-
-    # run hook before clearing the cart
-    $self->_run_hook('before_cart_clear', $self);
-
-    $self->items([]);
-
-    # run hook after clearing the cart
-    $self->_run_hook('after_cart_clear', $self);
-
-    # reset subtotal/total
-    $self->_set_subtotal(0);
-    $self->_set_total(0);
-    $self->cache_subtotal(1);
-    $self->cache_total(1);
-
-    $self->_set_last_modified(DateTime->now);
-
-    return;
-}
-
 sub _run_hook {
-    my ($self, $name, @args) = @_;
+    my ( $self, $name, @args ) = @_;
     my $ret;
 
-    if ($self->{run_hooks}) {
-    $ret = $self->{run_hooks}->($name, @args);
+    if ( $self->{run_hooks} ) {
+        $ret = $self->{run_hooks}->( $name, @args );
     }
 
     return $ret;
