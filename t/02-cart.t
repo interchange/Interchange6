@@ -100,73 +100,89 @@ cmp_ok( $cart->last_modified, '>', $modified,
     "last_modified updated: " . $cart->last_modified );
 
 $modified = $cart->last_modified;
+sleep 1;
+
+lives_ok{ $cart->remove('ABC') } "Remove item from cart by sku";
+
+cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
+
+cmp_ok( $cart->last_modified, '>', $modified,
+    "last_modified updated: " . $cart->last_modified );
+
+$modified = $cart->last_modified;
+sleep 1;
+
+# do some things with multiple items
+
+lives_ok { $cart->add( $args ) } "add item hashref to cart";
+
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+
+cmp_ok($cart->items->[0]->quantity, '==', 1, "item quantity is 1");
+
+lives_ok { $cart->add( $args ) } "add same item hashref to cart";
+
+cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+
+cmp_ok($cart->items->[0]->quantity, '==', 2, "item quantity is 3");
+
+$args = { sku => 'DEF', name => 'Foo', price => 10 };
+
+lives_ok { $cart->add( $args ) } "add second item hashref to cart";
+
+cmp_ok($cart->items->[0]->quantity, '==', 2, "quantity of 1st item is still 2");
+
+cmp_ok( $cart->count, '==', 2, "should have 2 items in cart" );
+
+$args = { sku => 'GHI', name => 'Bar', price => 15 };
+
+lives_ok { $cart->add( $args ) } "add third item hashref to cart";
+
+cmp_ok( $cart->count, '==', 3, "should have 3 items in cart" );
+
+cmp_ok($cart->quantity, '==', 4, "cart quantity is 4");
+
+lives_ok { $cart->update( GHI => 7 ) } "change quantity of 3rd item to 7";
+
+cmp_ok( $cart->count, '==', 3, "should still have 3 items in cart" );
+
+cmp_ok($cart->items->[2]->quantity, '==', 7, "quantity of 3rd item is 7");
+
+cmp_ok($cart->quantity, '==', 10, "cart quantity is 10");
+
+cmp_ok( $cart->last_modified, '>', $modified,
+    "last_modified updated: " . $cart->last_modified );
+
+$modified = $cart->last_modified;
+sleep 1;
+
+# try to add empty and null items;
+
+throws_ok { $cart->add() } qr/Missing required arg/, "try to add undef item";
+
+cmp_ok( $cart->last_modified, '==', $modified,
+    "last_modified unchanged: " . $cart->last_modified );
+
+throws_ok { $cart->add({}) } qr/Missing required arg/, "try to add empty item";
+
+cmp_ok( $cart->last_modified, '==', $modified,
+    "last_modified unchanged: " . $cart->last_modified );
+
+cmp_ok( $cart->count, '==', 3, "should still have 3 items in cart" );
+
+cmp_ok( $cart->quantity, '==', 10, "cart quantity is still 10");
+
+# remove 1st item by setting quantity to zero
+
+lives_ok { $cart->update( ABC => 0 ) } "change quantity of 1st item to 0";
+
+cmp_ok( $cart->count, '==', 2, "should have 2 items in cart" );
+
+cmp_ok( $cart->quantity, '==', 8, "cart quantity is 8");
+
 
 done_testing;
 __END__
-$item = {};
-$ret = $cart->add($item);
-ok(! defined($ret));
-ok(! $cart->last_modified)
-    || diag "Last modified: " . $cart->last_modified;
-
-$item->{sku} = 'ABC';
-$ret = $cart->add($item);
-ok(! defined($ret));
-ok(! $cart->last_modified)
-    || diag "Last modified: " . $cart->last_modified;
-
-$item->{name} = 'Foobar';
-$ret = $cart->add($item);
-ok(! defined($ret));
-ok(! $cart->last_modified)
-    || diag "Last modified: " . $cart->last_modified;
-
-$item->{price} = '42';
-$ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
-ok($cart->last_modified > 0);
-$ret = $cart->items();
-ok(@$ret == 1, "Items: $ret");
-
-# Combine items
-$item = {sku => 'ABC', name => 'Foobar', price => 5};
-$ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
-
-$ret = $cart->items;
-ok(@$ret == 1, "Items: $ret");
-
-$item = {sku => 'DEF', name => 'Foobar', price => 5};
-$ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
-
-$ret = $cart->items;
-ok(@$ret == 2, "Items: $ret");
-
-# Update item(s)
-$cart->update(ABC => 2);
-
-$ret = $cart->count;
-ok($ret == 2, "Count: $ret");
-
-$ret = $cart->quantity;
-ok($ret == 3, "Quantity: $ret");
-
-$cart->update(ABC => 1, DEF => 4);
-
-$ret = $cart->count;
-ok($ret == 2, "Count: $ret");
-
-$ret = $cart->quantity;
-ok($ret == 5, "Quantity: $ret");
-
-$cart->update(ABC => 0);
-
-$ret = $cart->count;
-ok($ret == 1, "Count: $ret");
-
-$ret = $cart->quantity;
-ok($ret == 4, "Quantity: $ret");
 
 # Cart removal
 $cart = Interchange6::Cart->new(run_hooks => sub {
