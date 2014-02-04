@@ -12,11 +12,15 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     BUILD_REQUIRES => {
+        'Test::Exception' => 0,
         'Test::More' => 0,
         'Test::Warnings' => 0,
     },
     PREREQ_PM => {
+        'DateTime' => 0,
         'Moo' => 0,
+        'MooX::HandlesVia' => 0,
+        'MooX::Types::MooseLike::Base' => 0,
 	    'Interchange6::Schema'     => 0.004,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
