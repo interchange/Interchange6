@@ -2,6 +2,7 @@
 
 package Interchange6::Cart::Item;
 
+use strict;
 use Moo;
 use MooX::Types::MooseLike::Base qw(:all);
 use Interchange6::Types qw(HasChars PositiveNum VarChar);

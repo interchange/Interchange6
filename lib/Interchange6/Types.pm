@@ -18,11 +18,6 @@ Mooish types for use by Interchange6
 
 my $defs = [
     {
-        name => 'DateTime',
-        test => sub { $_[0]->isa('DateTime') },
-        message => sub { "$_[0] is not a DateTime object." }
-    },
-    {
         name => 'HasChars',
         test => sub { $_[0] =~ /\S/ },
         message => sub { "$_[0] does not contain any non-space characters." }
