@@ -4,30 +4,43 @@
 
 use strict;
 use warnings;
+use DateTime;
 
-use Test::More tests => 52;
+#use Test::More tests => 52;
+use Test::More;
 use Test::Warnings qw/warning :no_end_test/;
+use Test::Exception;
 
 use Interchange6::Cart;
 
-my ($cart, $item, $name, $ret, $time);
+my ($cart, $item, $ret);
 
-# Get / set cart name
-$cart = Interchange6::Cart->new();
+# create a DateTime oject for later comparison
 
-$name = $cart->name;
-ok($name eq 'main', $name);
+my $dt_now = DateTime->now;
 
-$name = $cart->name('discount');
-ok($name eq 'discount');
+# create a cart and change its name
 
-# Values for created / modified
-$ret = $cart->created;
-ok($ret > 0);
+lives_ok { $cart = Interchange6::Cart->new() } "Create empty cart";
 
-$ret = $cart->last_modified;
-ok($ret > 0);
+isa_ok( $cart, 'Interchange6::Cart' );
 
+ok($cart->name eq 'main', 'Cart name is main');
+
+lives_ok { $ret = $cart->name('discount') } "Change cart name";
+cmp_ok($ret, 'eq', 'discount', "New name was returned");
+cmp_ok($cart->name, 'eq', 'discount', "Cart name is discount");
+
+# created / modified
+
+isa_ok($cart->created, 'DateTime');
+cmp_ok($cart->created, '>=', $dt_now, "creation time: " . $cart->created);
+
+isa_ok($cart->last_modified, 'DateTime');
+cmp_ok($cart->last_modified, '>=', $dt_now, "last_modified time: " . $cart->last_modified);
+
+done_testing;
+__END__
 # Items
 $cart = Interchange6::Cart->new(last_modified => 0);
 
