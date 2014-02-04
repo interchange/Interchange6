@@ -103,6 +103,11 @@ has items => (
     },
 );
 
+after clear => sub {
+    my $self = shift;
+    $self->_set_last_modified( DateTime->now );
+};
+
 =item last_modified
 
 Time cart was last modified (DateTime object)
@@ -370,13 +375,6 @@ sub update {
 =head2 clear
 
 Removes all items from the cart.
-
-=cut
-
-after clear => sub {
-    my $self = shift;
-    $self->_set_last_modified( DateTime->now );
-};
 
 =head2 find
 
