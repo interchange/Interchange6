@@ -71,26 +71,26 @@ has modifiers => (
 );
 
 has name => (
-    is      => 'rw',
-    isa     => AllOf [ Defined, NotEmpty, VarChar [255] ],
-    default => CART_DEFAULT,
+    is       => 'rw',
+    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    default  => CART_DEFAULT,
     required => 1,
 );
 
 has subtotal => (
-    is        => 'ro',
-    isa       => Num,
-    builder   => '_build_subtotal',
-    lazy      => 1,
-    clearer   => 1,
+    is      => 'ro',
+    isa     => Num,
+    builder => '_build_subtotal',
+    lazy    => 1,
+    clearer => 1,
 );
 
 has total => (
-    is        => 'ro',
-    isa       => Num,
-    builder   => '_build_total',
-    lazy      => 1,
-    clearer   => 1,
+    is      => 'ro',
+    isa     => Num,
+    builder => '_build_total',
+    lazy    => 1,
+    clearer => 1,
 );
 
 # builders
@@ -150,8 +150,8 @@ around add_hook => sub {
     my ( $package, $file, $line ) = caller(4);    # deep to 4 : user's app code
     my $add_hook_caller = [ $package, $file, $line ];
 
-    my ($hook)       = @_;
-    my $name         = $hook->name;
+    my ($hook) = @_;
+    my $name = $hook->name;
 
     # if that hook belongs to the app, register it now and return
     return $self->$orig(@_) if $self->has_hook($name);
@@ -228,7 +228,7 @@ sub remove {
 
     $index = $self->item_index( sub { $_->sku eq $arg } );
 
-    if ($index >= 0) {
+    if ( $index >= 0 ) {
 
         # run hooks before adding item to cart
         $item = $self->item_get($index);
