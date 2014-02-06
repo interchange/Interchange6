@@ -59,6 +59,7 @@ lives_ok { $item = 'Interchange6::Cart::Item'->new($args) }
 "create Interchange::Cart::Item";
 
 cmp_ok( $cart->subtotal, '==', 0, "Check subtotal" );
+cmp_ok( $cart->total,    '==', 0, "Check total" );
 
 lives_ok { $cart->add($item) } "add item to cart";
 
@@ -70,6 +71,7 @@ cmp_ok( $cart->last_modified, '>', $modified,
     "last_modified updated: " . $cart->last_modified );
 
 cmp_ok( $cart->subtotal, '==', 42, "Check subtotal" );
+cmp_ok( $cart->total,    '==', 42, "Check total" );
 
 $modified = $cart->last_modified;
 sleep 1;
@@ -157,6 +159,9 @@ cmp_ok( $cart->items->[2]->quantity, '==', 7, "quantity of 3rd item is 7" );
 
 cmp_ok( $cart->quantity, '==', 10, "cart quantity is 10" );
 
+cmp_ok( $cart->subtotal, '==', 199, "cart subtotal is 199" );
+cmp_ok( $cart->total,    '==', 199, "cart total is 199" );
+
 cmp_ok( $cart->last_modified, '>', $modified,
     "last_modified updated: " . $cart->last_modified );
 
@@ -194,6 +199,8 @@ cmp_ok( $cart->quantity, '==', 8, "cart quantity is 8" );
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
+# before_cart_remove hook
+
 lives_ok {
     $hook = Interchange6::Hook->new(
         name => 'before_cart_remove',
@@ -203,10 +210,11 @@ lives_ok {
                 $cart->_set_error('Item not removed due to hook.');
             }
         }
-    )
-} "Create before_cart_remove hook to prevent item from being removed";
+    );
+}
+"Create before_cart_remove hook for sku eq 123";
 
-lives_ok { $cart->add_hook( $hook ) } "Add the hook to the cart";
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
 $item = { sku => 'DEF', name => 'Foobar', price => 5 };
 lives_ok { $cart->add($item) } "add 1st item";
@@ -214,76 +222,64 @@ lives_ok { $cart->add($item) } "add 1st item";
 $item = { sku => '123', name => 'Foobar', price => 5 };
 lives_ok { $cart->add($item) } "add 2nd item";
 
-cmp_ok($cart->count, '==', 2, "2 items in cart");
+cmp_ok( $cart->count, '==', 2, "2 items in cart" );
 
-ok(! $cart->remove('123'), "attempt to remove item fails due to hook.");
+ok( !$cart->remove('123'), "attempt to remove item fails due to hook." );
 
-like($cart->error, qr/Item not removed due to hook/, "Error: ". $cart->error );
+like( $cart->error, qr/Item not removed due to hook/,
+    "Error: " . $cart->error );
 
-cmp_ok($cart->count, '==', 2, "2 items in cart");
+cmp_ok( $cart->count, '==', 2, "2 items in cart" );
 
-ok($cart->remove('DEF'), "remove other item from cart.");
+ok( $cart->remove('DEF'), "remove other item from cart." );
 
-cmp_ok($cart->count, '==', 1, "1 item in cart");
+cmp_ok( $cart->count, '==', 1, "1 item in cart" );
 
 lives_ok { $cart->replace_hook( 'before_cart_remove', [] ) } "Remove hook";
 
 lives_ok { $cart->remove('123') } "Remove item";
 
-cmp_ok($cart->is_empty, '==', 1, "cart is empty");
+cmp_ok( $cart->is_empty, '==', 1, "cart is empty" );
+
+# before_cart_add hook
+
+lives_ok {
+    $hook = Interchange6::Hook->new(
+        name => 'before_cart_add',
+        code => sub {
+            my ( $cart, $item ) = @_;
+            if ( $item->price > 3 ) {
+                $cart->_set_error('Item not added due to hook.');
+            }
+        }
+    );
+}
+"Create before_cart_add hook for price > 3";
+
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
+
+$item = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
+
+lives_ok { $cart->add($item) } "add item with price = 3";
+
+cmp_ok( $cart->has_error, '==', 0, "No error" );
+
+cmp_ok( $cart->count, '==', 1, "1 item in cart" );
+
+$item = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
+
+lives_ok { $cart->add($item) } "add item with price = 3.34";
+
+cmp_ok( $cart->has_error, '==', 1, "We have an error" );
+
+cmp_ok(
+    $cart->error, 'eq',
+    'Item not added due to hook.',
+    "Error is: " . $cart->error
+);
 
 done_testing;
 __END__
-    "Cart Error: " . $cart->error );
-
-$ret = $cart->items;
-ok( @$ret == 2, "Items: $ret" );
-
-$ret = $cart->remove('DEF');
-ok( defined($ret), "Item DEF removed from cart." );
-
-$ret = $cart->items;
-ok( @$ret == 1, "Items: $ret" );
-
-done_testing;
-__END__
-
-# 
-# Calculating total
-$cart->clear;
-$ret = $cart->total;
-ok($ret == 0, "Total: $ret");
-
-$item = {sku => 'GHI', name => 'Foobar', price => 2.22, quantity => 3};
-$ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
-
-$ret = $cart->total;
-ok($ret == 6.66, "Total: $ret");
-
-$item = {sku => 'KLM', name => 'Foobar', price => 3.34, quantity => 1};
-$ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
-
-$ret = $cart->total;
-ok($ret == 10, "Total: $ret");
-
-# Hooks
-$cart = Interchange6::Cart->new(run_hooks => sub {
-    my ($hook, $cart, $item) = @_;
-
-    if ($hook eq 'before_cart_add' && $item->{price} > 3) {
-	$item->{error} = 'Test error';
-    }
-			  });
-
-$item = {sku => 'KLM', name => 'Foobar', price => 3.34, quantity => 1};
-$ret = $cart->add($item);
-
-$ret = $cart->items;
-ok(@$ret == 0, "Items: $ret");
-
-ok($cart->error eq 'Test error', "Cart error: " . $cart->error);
 
 # Seed
 $cart = Interchange6::Cart->new();

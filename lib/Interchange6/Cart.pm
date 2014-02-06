@@ -41,6 +41,9 @@ has error => (
     predicate => 1,
 );
 
+# in addition to the standard accessors items has a number of public and
+# private methods supplied to us by MooX::HandlesVia
+
 has items => (
     is  => 'rw',
     isa => ArrayRef [ InstanceOf ['Interchange::Cart::Item'] ],
@@ -77,6 +80,12 @@ has name => (
     default  => CART_DEFAULT,
     required => 1,
 );
+
+# subtotal and total are declared lazy with a builder and clearer so that
+# instead of tracking whether their values are cached we can just call:
+#   $self->clear_subtotal
+# and then when the accessor is next called the builder method calculates
+# the new value for us
 
 has subtotal => (
     is      => 'ro',
@@ -115,6 +124,7 @@ sub _build_total {
 
     my $total = $subtotal;
 
+    # TODO: costs not yet added
     #my $total = $subtotal + $self->_calculate($subtotal);
 
     return $total;
@@ -162,6 +172,8 @@ around add_hook => sub {
     # for now extra hooks cannot be added so die if we got here
     croak "add_hook failed";
 };
+
+# public methods
 
 sub add {
     my $self = shift;
