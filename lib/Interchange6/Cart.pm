@@ -357,6 +357,18 @@ sub quantity {
     return $qty;
 }
 
+sub seed {
+    my ( $self, $item_ref ) = @_;
+
+    $self->_item_push( @{ $item_ref || [] } );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->{last_modified} = DateTime->now;
+
+    return $self->items;
+}
+
 1;
 
 =head1 NAME 
@@ -434,8 +446,6 @@ B<Example:> Return tax value by position
 
 Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
 
-=back
-
 =head2 costs
 
 Returns an array of all costs associated with the cart. Costs are ordered according to the order they were applied.
@@ -509,6 +519,18 @@ which is commonly used as number of items. If you have 5 apples and 6 pears it w
 =head2 remove($sku)
 
 Remove item from the cart. Takes SKU of item to identify the item.
+
+=head2 seed $item_ref
+
+Seeds items within the cart from $item_ref.
+
+B<NOTE:> use with caution since there is currently no validity checking performed on the items and any existing items in the cart will be lost. This method primarily exists for testing purposes only.
+
+  $cart->seed([
+      { sku => 'BMX2015', price => 20, quantity = 1 },
+      { sku => 'KTM2018', price => 400, quantity = 5 },
+      { sku => 'DBF2020', price => 200, quantity = 5 },
+  ]);
 
 =head2 subtotal
 
