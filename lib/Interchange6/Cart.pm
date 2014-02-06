@@ -3,56 +3,24 @@
 package Interchange6::Cart;
 
 use strict;
+use Carp;
 use Data::Dumper;
 use DateTime;
 use Interchange6::Cart::Item;
 use Scalar::Util 'blessed';
+use Try::Tiny;
 use Moo;
 use MooX::HandlesVia;
-use MooX::Types::MooseLike::Base qw(:all);
-use Interchange6::Types qw(HasChars VarChar);
+use Interchange6::Types;
+use Interchange6::Hook;
+
+with 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
 use constant CART_DEFAULT => 'main';
 
-=head1 NAME 
-
-Interchange6::Cart - Cart class for Interchange6 Shop Machine
-
-=head1 DESCRIPTION
-
-Generic cart class for L<Interchange6>.
-
-=head2 CART ATTRIBUTES AND METHODS
-
-=over 11
-
-=item cache_subtotal
-
-=cut
-
-has cache_subtotal => (
-    is      => 'rw',
-    isa     => Bool,
-    default => 1,
-);
-
-=item cache_total
-
-=cut
-
-has cache_total => (
-    is      => 'rw',
-    isa     => Bool,
-    default => 1,
-);
-
-=item costs
-
-Costs such as tax and shipping
-
-=cut
+# attributes
 
 has costs => (
     is      => 'rw',
@@ -60,36 +28,18 @@ has costs => (
     default => sub { [] },
 );
 
-=item created
-
-Time cart was created (DateTime object).
-
-Read-only attribute.
-=cut
-
 has created => (
     is      => 'ro',
-    isa     => InstanceOf ['DateTime'],
+    isa     => DateAndTime,
     default => sub { DateTime->now },
 );
 
-=item error
-
-Last error
-
-=cut
-
 has error => (
-    is      => 'rwp',
-    isa     => Str,
-    default => '',
+    is        => 'rwp',
+    isa       => Str,
+    clearer   => 1,
+    predicate => 1,
 );
-
-=item items
-
-Arrayref of Interchange::Cart::Item(s)
-
-=cut
 
 has items => (
     is  => 'rw',
@@ -97,32 +47,22 @@ has items => (
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
-        clear    => 'clear',
-        count    => 'count',
-        is_empty => 'is_empty',
+        clear       => 'clear',
+        count       => 'count',
+        _delete     => 'delete',
+        is_empty    => 'is_empty',
+        item_get    => 'get',
+        item_index  => 'first_index',
+        items_array => 'elements',
+        _push_item  => 'push',
     },
 );
 
-after clear => sub {
-    my $self = shift;
-    $self->_set_last_modified( DateTime->now );
-};
-
-=item last_modified
-
-Time cart was last modified (DateTime object)
-
-=cut
-
 has last_modified => (
     is      => 'rwp',
-    isa     => InstanceOf ['DateTime'],
+    isa     => DateAndTime,
     default => sub { DateTime->now },
 );
-
-=item modifiers
-
-=cut
 
 has modifiers => (
     is      => 'rw',
@@ -130,82 +70,93 @@ has modifiers => (
     default => sub { [] },
 );
 
-=item name
-
-Name of cart
-
-=cut
-
 has name => (
     is      => 'rw',
-    isa     => AllOf [ Defined, HasChars, VarChar [255] ],
+    isa     => AllOf [ Defined, NotEmpty, VarChar [255] ],
     default => CART_DEFAULT,
+    required => 1,
 );
-
-=item subtotal
-
-Current cart subtotal excluding costs
-
-=cut
 
 has subtotal => (
-    is      => 'rwp',
-    isa     => Num,
-    default => 0,
+    is        => 'ro',
+    isa       => Num,
+    builder   => '_build_subtotal',
+    lazy      => 1,
+    clearer   => 1,
 );
-
-=item total
-
-Current cart total including costs
-
-=cut
 
 has total => (
-    is      => 'rwp',
-    isa     => Num,
-    default => 0,
+    is        => 'ro',
+    isa       => Num,
+    builder   => '_build_total',
+    lazy      => 1,
+    clearer   => 1,
 );
 
-=back
+# builders
 
-=head2 add $item
+sub _build_subtotal {
+    my $self = shift;
 
-Add item to the cart. Returns item in case of success.
+    my $subtotal = 0;
 
-The item is an L<Interchange6::Cart::Item> or a hash (reference) which is subject to the following conditions:
+    for my $item ( $self->items_array ) {
+        $subtotal += $item->price * $item->quantity;
+    }
 
-=over 4
+    return $subtotal;
+}
 
-=item sku
+sub _build_total {
+    my $self = shift;
 
-Item identifier is required.
+    my $subtotal = $self->subtotal;
 
-=item name
+    my $total = $subtotal + $self->_calculate($subtotal);
 
-Item name is required.
+    return $total;
+}
 
-=item quantity
+# before/after/around various methods
 
-Item quantity is optional and has to be a natural number greater
-than zero. Default for quantity is 1.
+before clear => sub {
+    my $self = shift;
 
-Item price is required and a positive number.
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_clear', $self );
+};
 
-Price is required, because you want to maintain the price that was valid at the time of adding to the cart. Should the price in the shop change in the meantime, it will maintain this price. If you would like to update the pages, you have to do it before loading the cart page on your shop.
+after clear => sub {
+    my $self = shift;
 
+    print Dumper(@_);
 
-B<Example:> Add 5 BMX2012 products to the cart
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
 
-    $cart->add( sku => 'BMX2012', name => 'BMX bike', quantity => 5,
-        price => 200);
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_clear', $self );
+};
 
-B<Example:> Add a BMX2012 product to the cart.
+# add_hook will add the hook to the first "hook candidate" it finds that support
+# it. If none, then it will try to add the hook to the current application.
+around add_hook => sub {
+    my ( $orig, $self ) = ( shift, shift );
 
-    $cart->add( sku => 'BMX2012', name => 'BMX bike', price => 200);
+    # saving caller information
+    my ( $package, $file, $line ) = caller(4);    # deep to 4 : user's app code
+    my $add_hook_caller = [ $package, $file, $line ];
 
-=back
+    my ($hook)       = @_;
+    my $name         = $hook->name;
 
-=cut
+    # if that hook belongs to the app, register it now and return
+    return $self->$orig(@_) if $self->has_hook($name);
+
+    # for now extra hooks cannot be added so die if we got here
+    croak "add_hook failed";
+};
 
 sub add {
     my $self = shift;
@@ -220,8 +171,6 @@ sub add {
 
         # we got a hash(ref) rather than an Item
 
-        # TODO: can we use coercion in the attribute instead of this?
-
         my %args;
 
         if ( is_HashRef($item) ) {
@@ -233,6 +182,13 @@ sub add {
 
             %args = @_;
         }
+
+        # run hooks before validating item
+        # FIXME: This can only be run if we are passed a hash(ref) since
+        # passing an I::C::Item means that the item has already been
+        # validated. Maybe this hook should be removed? Maybe a new hook
+        # inside Cart::Item would be better?
+        $self->execute_hook( 'before_cart_add_validate', $self, \%args );
 
         $item = 'Interchange6::Cart::Item'->new(%args);
 
@@ -248,91 +204,58 @@ sub add {
     # if so then we add quantity to existing item otherwise we add new item
 
     unless ( $ret = $self->_combine($item) ) {
-        push @{ $self->items }, $item;
-        $self->_set_last_modified( DateTime->now );
+        $self->_push_item($item);
     }
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
 
     return $item;
 }
 
-=head2 remove $sku
-
-Remove item from the cart. Takes SKU of item to identify the item.
-
-=cut
-
 sub remove {
     my ( $self, $arg ) = @_;
-    my ( $pos, $found, $item );
+    my ( $index, $item );
 
-    $pos = 0;
+    $self->clear_error;
 
-    # run hooks before locating item
-    $self->_run_hook( 'before_cart_remove_validate', $self, $arg );
+    # run hook before locating item
+    $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
+    return if ( $self->has_error );
 
-    for $item ( @{ $self->items } ) {
-        if ( $item->sku eq $arg ) {
-            $found = 1;
-            last;
-        }
-        $pos++;
-    }
+    $index = $self->item_index( sub { $_->sku eq $arg } );
 
-    if ($found) {
+    if ($index >= 0) {
 
         # run hooks before adding item to cart
-        $item = $self->items->[$pos];
+        $item = $self->item_get($index);
 
-        $self->_run_hook( 'before_cart_remove', $self, $item );
+        $self->execute_hook( 'before_cart_remove', $self, $item );
+        return if ( $self->has_error );
 
-        if ( exists $item->{error} ) {
+        # remove item from our array
+        $self->_delete($index);
 
-            # one of the hooks denied removing the item
-            $self->_set_error( $item->{error} );
-            return;
-        }
-
-        # clear cache flags
-        $self->cache_subtotal(0);
-        $self->cache_total(0);
-
-        # removing item from our array
-        splice( @{ $self->items }, $pos, 1 );
-
+        $self->clear_subtotal;
+        $self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
-        $self->_run_hook( 'after_cart_remove', $self, $item );
+        $self->execute_hook( 'after_cart_remove', $self, $item );
+        return if ( $self->has_error );
+
         return 1;
     }
 
     # item missing
-    $self->_set_error = "Missing item $arg.";
-
+    $self->_set_error("Item not found in cart: $arg.");
     return;
 }
-
-=head2 update
-
-Update quantity of items in the cart.
-
-Parameters are pairs of SKUs and quantities, e.g.
-
-    $cart->update(9780977920174 => 5,
-                  9780596004927 => 3);
-
-Triggers before_cart_update and after_cart_update hooks.
-
-A quantity of zero is equivalent to removing this item,
-so in this case the remove hooks will be invoked instead
-of the update hooks.
-
-
-=cut
 
 sub update {
 
     my ( $self, @args ) = @_;
-    my ( $ref, $sku, $qty, $item, $new_item );
+    my ( $sku, $qty, $item, $new_item );
 
     while ( @args > 0 ) {
         $sku = shift @args;
@@ -353,9 +276,10 @@ sub update {
         next if $qty == $item->{quantity};
 
         # run hook before updating the cart
-        $new_item = { quantity => $qty };
+        $new_item = $item;
+        $new_item->quantity($qty);
 
-        $self->_run_hook( 'before_cart_update', $self, $item, $new_item );
+        $self->execute_hook( 'before_cart_update', $self, $item, $new_item );
 
         if ( exists $new_item->{error} ) {
 
@@ -364,33 +288,20 @@ sub update {
             return;
         }
 
+        $item->quantity($qty);
+
+        $self->clear_subtotal;
+        $self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
-        $self->_run_hook( 'after_cart_update', $self, $item, $new_item );
-
-        $item->quantity($qty);
+        $self->execute_hook( 'after_cart_update', $self, $item, $new_item );
     }
 }
-
-=head2 clear
-
-Removes all items from the cart.
-
-=head2 find
-
-Searches for an cart item with the given SKU.
-Returns cart item in case of sucess.
-
-    if ($item = $cart->find(9780977920174)) {
-        print "Quantity: $item->{quantity}.\n";
-    }
-
-=cut
 
 sub find {
     my ( $self, $sku ) = @_;
 
-    for my $cartitem ( @{ $self->items } ) {
+    for my $cartitem ( $self->items_array ) {
         if ( $sku eq $cartitem->sku ) {
             return $cartitem;
         }
@@ -399,20 +310,11 @@ sub find {
     return;
 }
 
-=head2 quantity
-
-Returns the sum of the quantity of all items in the shopping cart,
-which is commonly used as number of items. If you have 5 apples and 6 pears it will return 11.
-
-    print 'Items in your cart: ', $cart->quantity, "\n";
-
-=cut
-
 sub quantity {
     my $self = shift;
     my $qty  = 0;
 
-    for my $item ( @{ $self->{items} } ) {
+    for my $item ( $self->items_array ) {
         $qty += $item->quantity;
     }
 
@@ -422,7 +324,7 @@ sub quantity {
 sub _combine {
     my ( $self, $item ) = @_;
 
-  ITEMS: for my $cartitem ( @{ $self->{items} } ) {
+  ITEMS: for my $cartitem ( $self->items_array ) {
         if ( $item->sku eq $cartitem->sku ) {
             for my $mod ( @{ $self->modifiers } ) {
 
@@ -440,16 +342,181 @@ sub _combine {
     return 0;
 }
 
-sub _run_hook {
-    my ( $self, $name, @args ) = @_;
-    my $ret;
+1;
 
-    if ( $self->{run_hooks} ) {
-        $ret = $self->{run_hooks}->( $name, @args );
-    }
+=head1 NAME 
 
-    return $ret;
-}
+Interchange6::Cart - Cart class for Interchange6 Shop Machine
+
+=head1 SYNOPSIS
+
+  my $cart = Interchange6::Cart->new();
+
+  $cart->add( sku => 'ABC', name => 'Foo', price => 23.45 );
+
+  $cart->update( sku => 'ABC', quantity => 3 );
+
+  my $item = Interchange::Cart::Item->new( ... );
+
+  $cart->add($item);
+
+  $cart->apply_cost( ... );
+
+  my $total = $cart->total;
+
+=head1 DESCRIPTION
+
+Generic cart class for L<Interchange6>.
+
+=head1 METHODS
+
+=head2 new
+
+Returns a new Cart object.
+
+=head2 add($item)
+
+Add item to the cart. Returns item in case of success.
+
+The item is an L<Interchange6::Cart::Item> or a hash (reference) of item attributes that would be passed to Interchange6::Cart::Item->new(). See L<Interchange6::Cart::Item> for details.
+
+=head2 add_hook( $hook );
+
+This binds a coderef to an installed hook.
+
+  $hook = Interchange6::Hook->new(
+      name => 'before_cart_remove',
+      code => sub {
+          my ( $cart, $item ) = @_;
+          if ( $item->sku eq '123' ) {
+              $cart->_set_error('Item not removed due to hook.');
+          }
+      }
+  )
+
+  $cart->add_hook( $hook );
+
+See </HOOKS> for details of the available hooks.
+
+
+=head2 clear
+
+Removes all items from the cart.
+
+=head2 cost
+
+Returns particular cost by position or by name.
+
+B<Example:> Return tax value by name
+
+  $cart->cost('tax');
+
+Returns value of the tax (absolute value in your currency, not percentage)
+
+B<Example:> Return tax value by position
+
+  $cart->cost(0);
+
+Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
+
+=back
+
+=head2 costs
+
+Returns an array of all costs associated with the cart. Costs are ordered according to the order they were applied.
+
+=head2 count
+
+Returns the number of different items in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different items).
+
+=head2 created
+
+Returns the time the cart was created as a DateTime object.
+
+=head2 error
+
+Returns the last error.
+
+=head2 find
+
+Searches for an cart item with the given SKU.
+Returns cart item in case of sucess.
+
+  if ($item = $cart->find(9780977920174)) {
+      print "Quantity: $item->{quantity}.\n";
+  }
+
+=head2 is_empty
+
+Return boolean 1 or 0 depending on whether the cart is empty or not.
+
+=head2 item_get $index
+
+Returns the item at the specified index;
+
+=head2 item_index( sub {...})
+
+This method returns the index of the first matching item in the cart. The matching is done with a subroutine reference you pass to this method. The subroutine will be called against each element in the array until one matches or all elements have been checked.
+
+This method requires a single argument.
+
+  my $index = $cart->item_index( sub { $_->sku eq 'ABC' } );
+
+=head2 items
+
+Returns an arrayref of Interchange::Cart::Item(s)
+
+=head2 items_array
+
+Returns an array of Interchange::Cart::Item(s)
+
+=head2 last_modified
+
+Returns the time the cart was last modified as a DateTime object.
+
+=head2 name
+
+  $cart->name
+
+Returns current name of cart (default is 'main').
+
+  $cart->name('newname')
+
+Set new name of cart.
+
+=head2 quantity
+
+Returns the sum of the quantity of all items in the shopping cart,
+which is commonly used as number of items. If you have 5 apples and 6 pears it will return 11.
+
+  print 'Items in your cart: ', $cart->quantity, "\n";
+
+=head2 remove($sku)
+
+Remove item from the cart. Takes SKU of item to identify the item.
+
+=head2 subtotal
+
+Returns current cart subtotal excluding costs.
+
+=head2 total
+
+Returns current cart total including costs.
+
+=head2 update
+
+Update quantity of items in the cart.
+
+Parameters are pairs of SKUs and quantities, e.g.
+
+  $cart->update(9780977920174 => 5,
+                9780596004927 => 3);
+
+Triggers before_cart_update and after_cart_update hooks.
+
+A quantity of zero is equivalent to removing this item,
+so in this case the remove hooks will be invoked instead
+of the update hooks.
 
 =head1 AUTHORS
 
@@ -465,7 +532,3 @@ under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
-
-=cut
-
-1;

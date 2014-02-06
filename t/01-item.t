@@ -54,7 +54,7 @@ throws_ok { $item = Interchange6::Cart::Item->new($args) } qr/sku.+not defined/,
 $args->{sku} = '';
 
 throws_ok { $item = Interchange6::Cart::Item->new($args) }
-qr/sku.+not contain any non-space/, "create Item with empty sku";
+qr/sku.+contain some non-space/, "create Item with empty sku";
 
 # sku > 32 chars
 
@@ -84,7 +84,7 @@ qr/name.+not defined/,
 $args->{name} = '';
 
 throws_ok { $item = Interchange6::Cart::Item->new($args) }
-qr/name.+not contain any non-space/, "create Item with empty name";
+qr/name.+contain some non-space/, "create Item with empty name";
 
 # name > 255 chars
 

@@ -4,8 +4,7 @@ package Interchange6::Cart::Item;
 
 use strict;
 use Moo;
-use MooX::Types::MooseLike::Base qw(:all);
-use Interchange6::Types qw(HasChars PositiveNum VarChar);
+use Interchange6::Types;
 
 use namespace::clean;
 
@@ -25,31 +24,32 @@ Each cart item has the following attributes:
 
 =item sku
 
-Unique item identifier.
+Unique item identifier is required.
 
 =cut
 
 has sku => (
     is       => 'ro',
-    isa      => AllOf [ Defined, HasChars, VarChar [32] ],
+    isa      => AllOf [ Defined, NotEmpty, VarChar [32] ],
     required => 1,
 );
 
 =item name
 
-Item name.
+Item name is required.
 
 =cut
 
 has name => (
     is       => 'ro',
-    isa      => AllOf [ Defined, HasChars, VarChar [255] ],
+    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
     required => 1,
 );
 
 =item quantity
 
-Item quantity.
+Item quantity is optional and has to be a natural number greater
+than zero. Default for quantity is 1.
 
 =cut
 
@@ -61,7 +61,9 @@ has quantity => (
 
 =item price
 
-Item price.
+Item price is required and a positive number.
+
+Price is required, because you want to maintain the price that was valid at the time of adding to the cart. Should the price in the shop change in the meantime, it will maintain this price. If you would like to update the pages, you have to do it before loading the cart page on your shop.
 
 =cut
 
