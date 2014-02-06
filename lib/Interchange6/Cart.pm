@@ -49,12 +49,13 @@ has items => (
     handles     => {
         clear       => 'clear',
         count       => 'count',
-        _delete     => 'delete',
         is_empty    => 'is_empty',
         item_get    => 'get',
         item_index  => 'first_index',
         items_array => 'elements',
-        _push_item  => 'push',
+        _delete     => 'delete',
+        _item_push  => 'push',
+        _item_set   => 'set',
     },
 );
 
@@ -112,7 +113,9 @@ sub _build_total {
 
     my $subtotal = $self->subtotal;
 
-    my $total = $subtotal + $self->_calculate($subtotal);
+    my $total = $subtotal;
+
+    #my $total = $subtotal + $self->_calculate($subtotal);
 
     return $total;
 }
@@ -163,7 +166,7 @@ around add_hook => sub {
 sub add {
     my $self = shift;
     my $item = $_[0];
-    my $ret;
+    my ( $index, $olditem );
 
     $self->clear_error;
 
@@ -195,19 +198,41 @@ sub add {
         $item = 'Interchange6::Cart::Item'->new(%args);
 
         unless ( blessed($item) && $item->isa('Interchange6::Cart::Item') ) {
-            $self->_set_error("failed to create item: $_");
+            $self->_set_error("failed to create item.");
             return;
         }
     }
 
-    # $item is now an Interchange6::Cart::Item
+    # $item is now an Interchange6::Cart::Item so run hook
+
+    $self->execute_hook( 'before_cart_add', $self, $item );
+    return if $self->has_error;
 
     # cart may already contain an item with the same sku
     # if so then we add quantity to existing item otherwise we add new item
 
-    unless ( $ret = $self->_combine($item) ) {
-        $self->_push_item($item);
+    $index = $self->item_index( sub { $_->sku eq $item->sku } );
+
+    if ( $index >= 0 ) {
+
+        # item already exists in cart so we need to add new quantity to old
+
+        $olditem = $self->item_get($index);
+
+        $item->quantity( $olditem->quantity + $item->quantity );
+
+        $self->_item_set( $index, $item );
     }
+    else {
+
+        # a new item for this cart
+
+        $self->_item_push($item);
+    }
+
+    # final hook
+    $self->execute_hook( 'after_cart_add', $self, $item );
+    return if $self->has_error;
 
     $self->clear_subtotal;
     $self->clear_total;
@@ -318,27 +343,6 @@ sub quantity {
     }
 
     return $qty;
-}
-
-sub _combine {
-    my ( $self, $item ) = @_;
-
-  ITEMS: for my $cartitem ( $self->items_array ) {
-        if ( $item->sku eq $cartitem->sku ) {
-            for my $mod ( @{ $self->modifiers } ) {
-
-                # FIXME: modifiers needs to be handled
-                #next ITEMS unless($item->{$mod} eq $cartitem->{$mod});
-            }
-
-            $cartitem->quantity( $cartitem->quantity + $item->quantity );
-            $item->quantity( $cartitem->quantity );
-
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 1;
