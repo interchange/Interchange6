@@ -119,17 +119,18 @@ sub _build_total {
 
 # before/after/around various methods
 
-before clear => sub {
-    my $self = shift;
+around clear => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my $ret;
+
+    $self->clear_error;
 
     # run hook before clearing the cart
     $self->execute_hook( 'before_cart_clear', $self );
-};
+    return if $self->has_error;
 
-after clear => sub {
-    my $self = shift;
-
-    print Dumper(@_);
+    # fire off the clear
+    $ret = $orig->( $self, @_ );
 
     $self->clear_subtotal;
     $self->clear_total;
@@ -137,10 +138,11 @@ after clear => sub {
 
     # run hook after clearing the cart
     $self->execute_hook( 'after_cart_clear', $self );
+    return if $self->has_error;
+
+    return $ret;
 };
 
-# add_hook will add the hook to the first "hook candidate" it finds that support
-# it. If none, then it will try to add the hook to the current application.
 around add_hook => sub {
     my ( $orig, $self ) = ( shift, shift );
 
@@ -163,9 +165,7 @@ sub add {
     my $item = $_[0];
     my $ret;
 
-    # reset error
-
-    $self->_set_error('');
+    $self->clear_error;
 
     unless ( blessed($item) && $item->isa('Interchange6::Cart::Item') ) {
 
@@ -188,7 +188,9 @@ sub add {
         # passing an I::C::Item means that the item has already been
         # validated. Maybe this hook should be removed? Maybe a new hook
         # inside Cart::Item would be better?
+
         $self->execute_hook( 'before_cart_add_validate', $self, \%args );
+        return if $self->has_error;
 
         $item = 'Interchange6::Cart::Item'->new(%args);
 
@@ -222,7 +224,7 @@ sub remove {
 
     # run hook before locating item
     $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
-    return if ( $self->has_error );
+    return if $self->has_error;
 
     $index = $self->item_index( sub { $_->sku eq $arg } );
 
@@ -232,17 +234,18 @@ sub remove {
         $item = $self->item_get($index);
 
         $self->execute_hook( 'before_cart_remove', $self, $item );
-        return if ( $self->has_error );
+        return if $self->has_error;
 
         # remove item from our array
         $self->_delete($index);
 
+        # reset totals & modified before calling hook
         $self->clear_subtotal;
         $self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_remove', $self, $item );
-        return if ( $self->has_error );
+        return if $self->has_error;
 
         return 1;
     }
@@ -253,9 +256,10 @@ sub remove {
 }
 
 sub update {
-
     my ( $self, @args ) = @_;
     my ( $sku, $qty, $item, $new_item );
+
+    $self->clear_error;
 
     while ( @args > 0 ) {
         $sku = shift @args;
@@ -280,13 +284,7 @@ sub update {
         $new_item->quantity($qty);
 
         $self->execute_hook( 'before_cart_update', $self, $item, $new_item );
-
-        if ( exists $new_item->{error} ) {
-
-            # one of the hooks denied the item
-            $self->_set_error( $new_item->{error} );
-            return;
-        }
+        return if $self->has_error;
 
         $item->quantity($qty);
 
@@ -295,6 +293,7 @@ sub update {
         $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_update', $self, $item, $new_item );
+        return if $self->has_error;
     }
 }
 
