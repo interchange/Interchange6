@@ -216,17 +216,21 @@ lives_ok { $cart->add($item) } "add 2nd item";
 
 cmp_ok($cart->count, '==', 2, "2 items in cart");
 
-ok(! $cart->remove('123'), "attempt to remove hooked returns undef.");
+ok(! $cart->remove('123'), "attempt to remove item fails due to hook.");
 
 like($cart->error, qr/Item not removed due to hook/, "Error: ". $cart->error );
 
 cmp_ok($cart->count, '==', 2, "2 items in cart");
 
+ok($cart->remove('DEF'), "remove other item from cart.");
+
+cmp_ok($cart->count, '==', 1, "1 item in cart");
+
 lives_ok { $cart->replace_hook( 'before_cart_remove', [] ) } "Remove hook";
 
 lives_ok { $cart->remove('123') } "Remove item";
 
-cmp_ok($cart->count, '==', 1, "1 item in cart");
+cmp_ok($cart->is_empty, '==', 1, "cart is empty");
 
 done_testing;
 __END__
