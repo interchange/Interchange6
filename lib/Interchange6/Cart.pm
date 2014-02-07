@@ -309,6 +309,8 @@ sub update {
         if ( $qty == 0 ) {
 
             # remove item instead
+            # TODO: we're going to clobber error here so maybe we should
+            # stash it if it is already set
             $self->remove($sku);
             next;
         }
@@ -359,12 +361,16 @@ sub quantity {
 
 sub seed {
     my ( $self, $item_ref ) = @_;
+    my $item;
 
-    $self->_item_push( @{ $item_ref || [] } );
+    # clear existing items
+    $self->clear;
 
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->{last_modified} = DateTime->now;
+    for $item ( @{ $item_ref || [] } ) {
+
+        # TODO: risk of clobbering error - maybe stash it
+        $self->add( $item );
+    }
 
     return $self->items;
 }
@@ -524,7 +530,7 @@ Remove item from the cart. Takes SKU of item to identify the item.
 
 Seeds items within the cart from $item_ref.
 
-B<NOTE:> use with caution since there is currently no validity checking performed on the items and any existing items in the cart will be lost. This method primarily exists for testing purposes only.
+B<NOTE:> use with caution since any existing items in the cart will be lost. This method primarily exists for testing purposes only.
 
   $cart->seed([
       { sku => 'BMX2015', price => 20, quantity = 1 },
