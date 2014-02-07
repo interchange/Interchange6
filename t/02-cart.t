@@ -278,37 +278,28 @@ cmp_ok(
     "Error is: " . $cart->error
 );
 
-done_testing;
-__END__
-
 # Seed
-$cart = Interchange6::Cart->new();
-$cart->seed([{sku => 'ABC', name => 'ABC', price => 2, quantity => 1},
+
+lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
+
+lives_ok { $cart->add($item) } "add item which will be clobbered by seed";
+
+lives_ok { $cart->seed([{sku => 'ABC', name => 'ABC', price => 2, quantity => 1},
 	     {sku => 'ABCD', name => 'ABCD', price => 3, quantity => 2},
-	    ]);
+	    ]) } "Seed cart with 2 items";
 
-$ret = $cart->items;
-ok(@$ret == 2, "Items: $ret");
+cmp_ok( $cart->count, '==', 2, "Should be 2 items in cart" );
 
-$ret = $cart->count;
-ok($ret == 2, "Count: $ret");
+cmp_ok( $cart->quantity, '==', 3, "Quantity should be 3" );
 
-$ret = $cart->quantity;
-ok($ret == 3, "Quantity: $ret");
-
-$ret = $cart->total;
-ok($ret == 8, "Total: $ret");
-
-$cart->clear;
-
-$ret = $cart->count;
-ok($ret == 0, "Count: $ret");
-
-$ret = $cart->quantity;
-ok($ret == 0, "Quantity: $ret");
+cmp_ok( $cart->total, '==', 8, "Total should be 8" );
 
 # users id
-$cart = Interchange6::Cart->new();
+
+lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
+
+done_testing;
+__END__
 
 $ret = $cart->users_id;
 ok (! defined($ret), "Users id of anonymous user");
