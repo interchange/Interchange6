@@ -23,6 +23,8 @@ $modified = DateTime->now;
 
 #die_on_fail;
 
+if(0){##########
+
 # create a cart and change its name
 
 lives_ok { $cart = Interchange6::Cart->new() } "Create empty cart";
@@ -278,10 +280,13 @@ cmp_ok(
     "Error is: " . $cart->error
 );
 
+}##########
+
 # Seed
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
+$item = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
 lives_ok { $cart->add($item) } "add item which will be clobbered by seed";
 
 lives_ok { $cart->seed([{sku => 'ABC', name => 'ABC', price => 2, quantity => 1},

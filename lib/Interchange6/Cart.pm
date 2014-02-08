@@ -41,6 +41,14 @@ has error => (
     predicate => 1,
 );
 
+# Cart id can be used for subclasses, e.g. primary key value for carts in the
+# database.
+
+has id => (
+    is  => 'rw',
+    isa => Str,
+);
+
 # in addition to the standard accessors items has a number of public and
 # private methods supplied to us by MooX::HandlesVia
 
@@ -156,6 +164,30 @@ around clear => sub {
     return $ret;
 };
 
+around name => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my $ret;
+
+    $self->clear_error;
+
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_clear', $self );
+    return if $self->has_error;
+
+    # fire off the clear
+    $ret = $orig->( $self, @_ );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
+
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_clear', $self );
+    return if $self->has_error;
+
+    return $ret;
+};
+
 around add_hook => sub {
     my ( $orig, $self ) = ( shift, shift );
 
@@ -199,10 +231,6 @@ sub add {
         }
 
         # run hooks before validating item
-        # FIXME: This can only be run if we are passed a hash(ref) since
-        # passing an I::C::Item means that the item has already been
-        # validated. Maybe this hook should be removed? Maybe a new hook
-        # inside Cart::Item would be better?
 
         $self->execute_hook( 'before_cart_add_validate', $self, \%args );
         return if $self->has_error;
@@ -294,23 +322,24 @@ sub remove {
 
 sub update {
     my ( $self, @args ) = @_;
-    my ( $sku, $qty, $item, $new_item );
+    my ( $sku, $qty, $item, $new_item, @errors );
 
     $self->clear_error;
 
-    while ( @args > 0 ) {
+  ARGS: while ( @args > 0 ) {
         $sku = shift @args;
         $qty = shift @args;
 
+        # stash any existing error
+        push( @errors, $self->error ) if $self->has_error;
+
         unless ( $item = $self->find($sku) ) {
-            die "Item for $sku not found in cart.\n";
+            $self->_set_error("Item for $sku not found in cart.");
+            next ARGS;
         }
 
         if ( $qty == 0 ) {
 
-            # remove item instead
-            # TODO: we're going to clobber error here so maybe we should
-            # stash it if it is already set
             $self->remove($sku);
             next;
         }
@@ -323,7 +352,7 @@ sub update {
         $new_item->quantity($qty);
 
         $self->execute_hook( 'before_cart_update', $self, $item, $new_item );
-        return if $self->has_error;
+        next ARGS if $self->has_error;
 
         $item->quantity($qty);
 
@@ -332,8 +361,9 @@ sub update {
         $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_update', $self, $item, $new_item );
-        return if $self->has_error;
     }
+    push( @errors, $self->error ) if $self->has_error;
+    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 }
 
 sub find {
@@ -361,16 +391,20 @@ sub quantity {
 
 sub seed {
     my ( $self, $item_ref ) = @_;
-    my $item;
+    my ( $item, @errors );
 
     # clear existing items
     $self->clear;
 
     for $item ( @{ $item_ref || [] } ) {
 
-        # TODO: risk of clobbering error - maybe stash it
-        $self->add( $item );
+        # stash any existing error
+        push( @errors, $self->error ) if $self->has_error;
+
+        $self->add($item);
     }
+    push( @errors, $self->error ) if $self->has_error;
+    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 
     return $self->items;
 }
@@ -429,7 +463,7 @@ This binds a coderef to an installed hook.
 
   $cart->add_hook( $hook );
 
-See </HOOKS> for details of the available hooks.
+See L</HOOKS> for details of the available hooks.
 
 
 =head2 clear
@@ -560,6 +594,70 @@ Triggers before_cart_update and after_cart_update hooks.
 A quantity of zero is equivalent to removing this item,
 so in this case the remove hooks will be invoked instead
 of the update hooks.
+
+=head1 HOOKS
+
+The following hooks are available:
+
+=over 4
+
+=item before_cart_add_validate
+
+Called in L</add> for items added as hash(ref)s. Not called for items passed into L</add> that are already L<Interchange6::Cart::Item> objects.
+
+Receives: $cart, \%args
+
+=item before_cart_add
+
+Called in L</add> immediately before the Interchange6::Cart::Item is added to the cart.
+
+Receives: $cart, $item
+
+=item after_cart_add
+
+Called in L</add> after item has been added to the cart.
+
+Receives: $cart, $item
+
+=item before_cart_remove_validate
+
+Called at start of L</remove> before arg has been validated.
+
+Receives: $cart, $sku
+
+=item before_cart_remove
+
+Called in L</remove> before item is removed from cart.
+
+Receives: $cart, $item
+
+=item after_cart_remove
+
+Called in L</remove> after item has been removed from cart.
+
+Receives: $cart, $item
+
+=item before_cart_update
+
+=item after_cart_update
+
+=item before_cart_clear
+
+=item after_cart_clear
+
+=item before_cart_set_users_id
+
+=item after_cart_set_users_id
+
+=item before_cart_set_sessions_id
+
+=item after_cart_set_sessions_id
+
+=item before_cart_rename
+
+=item after_cart_rename
+
+=back
 
 =head1 AUTHORS
 
