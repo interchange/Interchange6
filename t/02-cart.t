@@ -23,8 +23,6 @@ $modified = DateTime->now;
 
 #die_on_fail;
 
-if(0){##########
-
 # create a cart and change its name
 
 lives_ok { $cart = Interchange6::Cart->new() } "Create empty cart";
@@ -128,12 +126,13 @@ lives_ok { $cart->add($args) } "add item hashref to cart";
 
 cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
 
-cmp_ok( $cart->items->[0]->quantity, '==', 1, "item quantity is 1" );
+cmp_ok( $cart->get_items->[0]->quantity, '==', 1, "item quantity is 1" );
 
 lives_ok { $cart->add($args) } "add same item hashref to cart";
 
 cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
 
+print Dumper($cart->items);
 cmp_ok( $cart->items->[0]->quantity, '==', 2, "item quantity is 3" );
 
 $args = { sku => 'DEF', name => 'Foo', price => 10 };
@@ -279,8 +278,6 @@ cmp_ok(
     'Item not added due to hook.',
     "Error is: " . $cart->error
 );
-
-}##########
 
 # Seed
 
