@@ -14,11 +14,13 @@ use MooX::HandlesVia;
 use Interchange6::Types;
 use Interchange6::Hook;
 
+with 'Interchange6::Role::Errors';
 with 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
 use constant CART_DEFAULT => 'main';
+use constant WARN_DEPRECATED => 0;
 
 # attributes
 
@@ -34,13 +36,6 @@ has created => (
     default => sub { DateTime->now },
 );
 
-has error => (
-    is        => 'rwp',
-    isa       => Str,
-    clearer   => 1,
-    predicate => 1,
-);
-
 # Cart id can be used for subclasses, e.g. primary key value for carts in the
 # database.
 
@@ -53,7 +48,7 @@ has id => (
 # private methods supplied to us by MooX::HandlesVia
 
 has items => (
-    is  => 'rw',
+    is  => 'rwp',
     isa => ArrayRef [ InstanceOf ['Interchange::Cart::Item'] ],
     default     => sub { [] },
     handles_via => 'Array',
@@ -68,7 +63,12 @@ has items => (
         _item_push  => 'push',
         _item_set   => 'set',
     },
+    reader   => 'get_items',
+    writer   => 'set_items',
 );
+
+#around items {
+#};
 
 has last_modified => (
     is      => 'rwp',
@@ -87,6 +87,8 @@ has name => (
     isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
     default  => CART_DEFAULT,
     required => 1,
+    reader   => 'get_name',
+    writer   => 'set_name',
 );
 
 # subtotal and total are declared lazy with a builder and clearer so that
@@ -109,6 +111,12 @@ has total => (
     builder => '_build_total',
     lazy    => 1,
     clearer => 1,
+);
+
+has users_id => (
+    is        => 'rw',
+    isa       => Str,
+    predicate => 1,
 );
 
 # builders
@@ -164,14 +172,38 @@ around clear => sub {
     return $ret;
 };
 
-around name => sub {
+around set_name => sub {
     my ( $orig, $self ) = ( shift, shift );
     my $ret;
 
     $self->clear_error;
 
     # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_clear', $self );
+    $self->execute_hook( 'before_cart_rename', $self );
+    return if $self->has_error;
+
+    # fire off the clear
+    $ret = $orig->( $self, @_ );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
+
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_rename', $self );
+    return if $self->has_error;
+
+    return $ret;
+};
+
+around users_id => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my $ret;
+
+    $self->clear_error;
+
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_set_users_id', $self );
     return if $self->has_error;
 
     # fire off the clear
@@ -212,7 +244,7 @@ sub add {
     my $item = $_[0];
     my ( $index, $olditem );
 
-    $self->clear_error;
+    $self->clear_error unless caller eq  __PACKAGE__;
 
     unless ( blessed($item) && $item->isa('Interchange6::Cart::Item') ) {
 
@@ -285,7 +317,7 @@ sub remove {
     my ( $self, $arg ) = @_;
     my ( $index, $item );
 
-    $self->clear_error;
+    $self->clear_error unless caller eq  __PACKAGE__;
 
     # run hook before locating item
     $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
@@ -407,6 +439,39 @@ sub seed {
     $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 
     return $self->items;
+}
+
+# deprecated compatibility methods
+
+sub deprecated {
+    carp "$_[0] deprecated in favour of get_$_[0]/set_$_[0]" if WARN_DEPRECATED;
+}
+
+sub items {
+    my $self = shift;
+    return $self->get_items;
+}
+
+sub foo {
+    deprecated "name";
+    my $self = shift;
+    my @items;
+    foreach my $item ( $self->get_items ) {
+        $item = $item->[0];
+        push @items, { %$item },
+    }
+    return @items;
+    return map { %$_ } $self->get_items;
+}
+
+sub name {
+    deprecated "name";
+    my $self = shift;
+    if (@_ > 0) {
+        $self->set_name($_[0]);
+    }
+    #$self->set_name($_[0]) if (@_ > 0);
+    return $self->get_name;
 }
 
 1;
