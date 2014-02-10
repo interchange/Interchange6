@@ -20,7 +20,6 @@ with 'Interchange6::Role::Hookable';
 use namespace::clean;
 
 use constant CART_DEFAULT    => 'main';
-use constant WARN_DEPRECATED => 0;
 
 # attributes
 
@@ -542,31 +541,14 @@ sub _calculate {
     return $sum;
 }
 
-# deprecated compatibility methods
-
-sub deprecated {
-    carp "$_[0] deprecated in favour of get_$_[0]/set_$_[0]" if WARN_DEPRECATED;
-}
+# compatibility methods
 
 sub products {
     my $self = shift;
     return $self->get_products;
 }
 
-sub foo {
-    deprecated "name";
-    my $self = shift;
-    my @products;
-    foreach my $product ( $self->get_products ) {
-        $product = $product->[0];
-        push @products, {%$product},;
-    }
-    return @products;
-    return map { %$_ } $self->get_products;
-}
-
 sub name {
-    deprecated "name";
     my $self = shift;
     if ( @_ > 0 ) {
         $self->set_name( $_[0] );
@@ -707,6 +689,18 @@ Returns cart product in case of sucess.
       print "Quantity: $product->{quantity}.\n";
   }
 
+=head2 get_name
+
+Returns cart name
+
+=head2 get_products
+
+Returns an arrayref of Interchange::Cart::Product(s)
+
+=head2 get_sessions_id
+
+=head2 get_users_id
+
 =head2 is_empty
 
 Return boolean 1 or 0 depending on whether the cart is empty or not.
@@ -725,7 +719,7 @@ This method requires a single argument.
 
 =head2 products
 
-Returns an arrayref of Interchange::Cart::Product(s)
+An alias for get_products for backwards compatibility.
 
 =head2 products_array
 
@@ -736,6 +730,8 @@ Returns an array of Interchange::Cart::Product(s)
 Returns the time the cart was last modified as a DateTime object.
 
 =head2 name
+
+An alias for get_name and set_name for backwards compatibility.
 
   $cart->name
 
