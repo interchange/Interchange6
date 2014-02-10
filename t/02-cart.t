@@ -7,8 +7,7 @@ use warnings;
 use Data::Dumper;
 use DateTime;
 
-#use Test::Most tests => 57;
-use Test::Most;
+use Test::Most tests => 112;
 use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
@@ -132,7 +131,6 @@ lives_ok { $cart->add($args) } "add same item hashref to cart";
 
 cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
 
-print Dumper($cart->items);
 cmp_ok( $cart->items->[0]->quantity, '==', 2, "item quantity is 3" );
 
 $args = { sku => 'DEF', name => 'Foo', price => 10 };
@@ -300,9 +298,6 @@ cmp_ok( $cart->total, '==', 8, "Total should be 8" );
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
-done_testing;
-__END__
-
 $ret = $cart->users_id;
 ok (! defined($ret), "Users id of anonymous user");
 
@@ -312,17 +307,27 @@ ok ($ret eq '100', "Return value of users_id setter");
 $ret = $cart->users_id;
 ok ($ret eq '100', "Value of users_id after setting it to 100");
 
-$cart = Interchange6::Cart->new(run_hooks => sub {
-    my ($hook, $object, $data) = @_;
+lives_ok {
+    $hook = Interchange6::Hook->new(
+        name => 'before_cart_set_users_id',
+        code => sub {
+            my ( $cart, $data ) = @_;
+            warn "Testing before_set_users_id hook with $data->{users_id}.\n";
+        }
+    );
+} "create hook";
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-    if ($hook eq 'before_cart_set_users_id') {
-        warn "Testing before_set_users_id hook with $data->{users_id}.\n";
-    }
-
-    if ($hook eq 'after_cart_set_users_id') {
-        warn "Testing after_set_users_id hook with $data->{users_id}.\n";
-    }
-});
+lives_ok {
+    $hook = Interchange6::Hook->new(
+        name => 'after_cart_set_users_id',
+        code => sub {
+            my ( $cart, $data ) = @_;
+            warn "Testing after_set_users_id hook with $data->{users_id}.\n";
+        }
+    );
+} "create hook";
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
 my $warns = warning {$ret = $cart->users_id(200)};
 
@@ -349,17 +354,27 @@ ok ($ret eq '323460431348215171797029562762075811', "Return value of sessions_id
 $ret = $cart->sessions_id;
 ok ($ret eq '323460431348215171797029562762075811', "Value of sessions_id after setting it to 323460431348215171797029562762075811");
 
-$cart = Interchange6::Cart->new(run_hooks => sub {
-    my ($hook, $object, $data) = @_;
+lives_ok {
+    $hook = Interchange6::Hook->new(
+        name => 'before_cart_set_sessions_id',
+        code => sub {
+            my ( $cart, $data ) = @_;
+            warn "Testing before_set_sessions_id hook with $data->{sessions_id}.\n";
+        }
+    );
+} "create hook";
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-    if ($hook eq 'before_cart_set_sessions_id') {
-        warn "Testing before_set_sessions_id hook with $data->{sessions_id}.\n";
-    }
-
-    if ($hook eq 'after_cart_set_sessions_id') {
-        warn "Testing after_set_sessions_id hook with $data->{sessions_id}.\n";
-    }
-});
+lives_ok {
+    $hook = Interchange6::Hook->new(
+        name => 'after_cart_set_sessions_id',
+        code => sub {
+            my ( $cart, $data ) = @_;
+            warn "Testing after_set_sessions_id hook with $data->{sessions_id}.\n";
+        }
+    );
+} "create hook";
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
 $warns = warning {$ret = $cart->sessions_id('513457188818705086798161933370395265')};
 
@@ -374,3 +389,4 @@ ok ($warns->[1] eq "Testing after_set_sessions_id hook with 51345718881870508679
      "Test warning from after_set_sessions_id hook.")
     || diag "Warning: $warns->[1].";
 
+done_testing;
