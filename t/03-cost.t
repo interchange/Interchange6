@@ -40,7 +40,8 @@ $cart->clear_cost;
 # relative amount to cart with one item
 $item = {sku => 'ABC', name => 'Foobar', price => 22};
 $ret = $cart->add($item);
-ok(ref($ret) eq 'HASH', $cart->error);
+
+cmp_ok( $cart->count, '==', 1, "one item in cart");
 
 $cart->apply_cost(amount => 0.5, relative => 1, name => 'megatax');
 

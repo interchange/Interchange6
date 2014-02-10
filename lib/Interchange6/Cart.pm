@@ -156,6 +156,11 @@ sub _build_total {
 
 # before/after/around various methods
 
+after clear_cost => sub {
+    my $self = shift;
+    $self->clear_total;
+};
+
 around clear => sub {
     my ( $orig, $self ) = ( shift, shift );
     my $ret;
@@ -303,7 +308,7 @@ sub apply_cost {
     $self->_cost_push( \%args );
 
     # clear cache for total
-    $self->_clear_total unless $args{inclusive};
+    $self->clear_total unless $args{inclusive};
 }
 
 sub cost {
