@@ -19,15 +19,21 @@ with 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
-use constant CART_DEFAULT => 'main';
+use constant CART_DEFAULT    => 'main';
 use constant WARN_DEPRECATED => 0;
 
 # attributes
 
 has costs => (
-    is      => 'rw',
-    isa     => ArrayRef,
-    default => sub { [] },
+    is          => 'rwp',
+    isa         => ArrayRef [HashRef],
+    default     => sub { [] },
+    handles_via => 'Array',
+    handles     => {
+        clear_cost => 'clear',
+        cost_get   => 'get',
+        _cost_push => 'push',
+    },
 );
 
 has created => (
@@ -63,12 +69,9 @@ has items => (
         _item_push  => 'push',
         _item_set   => 'set',
     },
-    reader   => 'get_items',
-    writer   => 'set_items',
+    reader => 'get_items',
+    writer => 'set_items',
 );
-
-#around items {
-#};
 
 has last_modified => (
     is      => 'rwp',
@@ -89,6 +92,13 @@ has name => (
     required => 1,
     reader   => 'get_name',
     writer   => 'set_name',
+);
+
+has sessions_id => (
+    is     => 'rwp',
+    isa    => Str,
+    reader => 'get_sessions_id',
+    writer => '_set_sessions_id',
 );
 
 # subtotal and total are declared lazy with a builder and clearer so that
@@ -114,9 +124,10 @@ has total => (
 );
 
 has users_id => (
-    is        => 'rw',
-    isa       => Str,
-    predicate => 1,
+    is     => 'rwp',
+    isa    => Str,
+    reader => 'get_users_id',
+    writer => '_set_users_id',
 );
 
 # builders
@@ -138,10 +149,7 @@ sub _build_total {
 
     my $subtotal = $self->subtotal;
 
-    my $total = $subtotal;
-
-    # TODO: costs not yet added
-    #my $total = $subtotal + $self->_calculate($subtotal);
+    my $total = $subtotal + $self->_calculate($subtotal);
 
     return $total;
 }
@@ -196,30 +204,6 @@ around set_name => sub {
     return $ret;
 };
 
-around users_id => sub {
-    my ( $orig, $self ) = ( shift, shift );
-    my $ret;
-
-    $self->clear_error;
-
-    # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_set_users_id', $self );
-    return if $self->has_error;
-
-    # fire off the clear
-    $ret = $orig->( $self, @_ );
-
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->_set_last_modified( DateTime->now );
-
-    # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_clear', $self );
-    return if $self->has_error;
-
-    return $ret;
-};
-
 around add_hook => sub {
     my ( $orig, $self ) = ( shift, shift );
 
@@ -244,7 +228,7 @@ sub add {
     my $item = $_[0];
     my ( $index, $olditem );
 
-    $self->clear_error unless caller eq  __PACKAGE__;
+    $self->clear_error unless caller eq __PACKAGE__;
 
     unless ( blessed($item) && $item->isa('Interchange6::Cart::Item') ) {
 
@@ -313,11 +297,71 @@ sub add {
     return $item;
 }
 
+sub apply_cost {
+    my ( $self, %args ) = @_;
+
+    $self->_cost_push( \%args );
+
+    # clear cache for total
+    $self->_clear_total unless $args{inclusive};
+}
+
+sub cost {
+    my ( $self, $loc ) = @_;
+    my ( $cost, $ret );
+
+    if ( defined $loc ) {
+        if ( $loc =~ /^\d+$/ ) {
+
+            # cost by position
+            $cost = $self->cost_get($loc);
+        }
+        elsif ( $loc =~ /\S/ ) {
+
+            # cost by name
+            for my $c ( @{ $self->{costs} } ) {
+                if ( $c->{name} eq $loc ) {
+                    $cost = $c;
+                }
+            }
+        }
+    }
+
+    if ( defined $cost ) {
+        $ret = $self->_calculate( $self->{subtotal}, $cost, 1 );
+    }
+
+    return $ret;
+}
+
+sub find {
+    my ( $self, $sku ) = @_;
+
+    for my $cartitem ( $self->items_array ) {
+        if ( $sku eq $cartitem->sku ) {
+            return $cartitem;
+        }
+    }
+
+    return;
+}
+
+sub quantity {
+    my $self = shift;
+    my $qty  = 0;
+
+    for my $item ( $self->items_array ) {
+        $qty += $item->quantity;
+    }
+
+    return $qty;
+}
+
 sub remove {
     my ( $self, $arg ) = @_;
     my ( $index, $item );
 
-    $self->clear_error unless caller eq  __PACKAGE__;
+    $self->clear_error unless caller eq __PACKAGE__;
 
     # run hook before locating item
     $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
@@ -350,6 +394,44 @@ sub remove {
     # item missing
     $self->_set_error("Item not found in cart: $arg.");
     return;
+}
+
+sub seed {
+    my ( $self, $item_ref ) = @_;
+    my ( $item, @errors );
+
+    # clear existing items
+    $self->clear;
+
+    for $item ( @{ $item_ref || [] } ) {
+
+        # stash any existing error
+        push( @errors, $self->error ) if $self->has_error;
+
+        $self->add($item);
+    }
+    push( @errors, $self->error ) if $self->has_error;
+    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+
+    return $self->items;
+}
+
+sub sessions_id {
+    my ( $self, $sessions_id ) = @_;
+
+    if ( @_ > 1 ) {
+
+        # set sessions_id for the cart
+        my %data = ( sessions_id => $sessions_id );
+
+        $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
+
+        $self->_set_sessions_id($sessions_id);
+
+        $self->execute_hook( 'after_cart_set_sessions_id', $self, \%data );
+    }
+
+    return $self->get_sessions_id;
 }
 
 sub update {
@@ -398,47 +480,56 @@ sub update {
     $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 }
 
-sub find {
-    my ( $self, $sku ) = @_;
+sub users_id {
+    my ( $self, $users_id ) = @_;
 
-    for my $cartitem ( $self->items_array ) {
-        if ( $sku eq $cartitem->sku ) {
-            return $cartitem;
+    if ( @_ > 1 ) {
+
+        # set users_id for the cart
+        my %data = ( users_id => $users_id );
+
+        $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
+
+        $self->_set_users_id($users_id);
+
+        $self->execute_hook( 'after_cart_set_users_id', $self, \%data );
+    }
+
+    return $self->get_users_id;
+}
+
+# private methods
+
+sub _calculate {
+    my ( $self, $subtotal, $costs, $display ) = @_;
+    my ( $cost_ref, $sum );
+
+    if ( ref $costs eq 'HASH' ) {
+        $cost_ref = [$costs];
+    }
+    elsif ( ref $costs eq 'ARRAY' ) {
+        $cost_ref = $costs;
+    }
+    else {
+        $cost_ref = $self->costs;
+    }
+
+    $sum = 0;
+
+    for my $calc (@$cost_ref) {
+        if ( $calc->{inclusive} && !$display ) {
+            next;
+        }
+
+        if ( $calc->{relative} ) {
+            $sum += $subtotal * $calc->{amount};
+        }
+        else {
+            $sum += $calc->{amount};
         }
     }
 
-    return;
-}
-
-sub quantity {
-    my $self = shift;
-    my $qty  = 0;
-
-    for my $item ( $self->items_array ) {
-        $qty += $item->quantity;
-    }
-
-    return $qty;
-}
-
-sub seed {
-    my ( $self, $item_ref ) = @_;
-    my ( $item, @errors );
-
-    # clear existing items
-    $self->clear;
-
-    for $item ( @{ $item_ref || [] } ) {
-
-        # stash any existing error
-        push( @errors, $self->error ) if $self->has_error;
-
-        $self->add($item);
-    }
-    push( @errors, $self->error ) if $self->has_error;
-    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
-
-    return $self->items;
+    return $sum;
 }
 
 # deprecated compatibility methods
@@ -458,7 +549,7 @@ sub foo {
     my @items;
     foreach my $item ( $self->get_items ) {
         $item = $item->[0];
-        push @items, { %$item },
+        push @items, {%$item},;
     }
     return @items;
     return map { %$_ } $self->get_items;
@@ -467,9 +558,10 @@ sub foo {
 sub name {
     deprecated "name";
     my $self = shift;
-    if (@_ > 0) {
-        $self->set_name($_[0]);
+    if ( @_ > 0 ) {
+        $self->set_name( $_[0] );
     }
+
     #$self->set_name($_[0]) if (@_ > 0);
     return $self->get_name;
 }
@@ -530,10 +622,39 @@ This binds a coderef to an installed hook.
 
 See L</HOOKS> for details of the available hooks.
 
+=head2 apply_cost
+
+Apply cost to cart. apply_cost is a generic method typicaly used for taxes, discounts, coupons, gift certificates,...
+
+B<Example:> Absolute cost
+
+    Uses absolute value for amount. Amount 5 is 5 units of currency used (ie. $5).
+
+    $cart->apply_cost(amount => 5, name => 'shipping', label => 'Shipping');
+
+B<Example:> Relative cost
+
+    Uses percentage instead of value for amount. Amount 0.19 in example is 19%.
+
+    relative is a boolean value (0/1).
+
+    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'VAT', relative => 1);
+
+B<Example:> Inclusive cost
+
+    Same as relative cost, but it assumes that tax was included in the subtotal already, and only displays it (19% of subtotal value in example). Inclusive is a boolean value (0/1).
+
+    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'Sales Tax', relative => 1, inclusive => 1);
+
+=cut
 
 =head2 clear
 
 Removes all items from the cart.
+
+=head2 clear_cost
+
+Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
 
 =head2 cost
 
@@ -637,6 +758,8 @@ B<NOTE:> use with caution since any existing items in the cart will be lost. Thi
       { sku => 'DBF2020', price => 200, quantity = 5 },
   ]);
 
+=head2 sessions_id
+
 =head2 subtotal
 
 Returns current cart subtotal excluding costs.
@@ -659,6 +782,10 @@ Triggers before_cart_update and after_cart_update hooks.
 A quantity of zero is equivalent to removing this item,
 so in this case the remove hooks will be invoked instead
 of the update hooks.
+
+=head2 users_id
+
+Returns the id of the user if user is logged in.
 
 =head1 HOOKS
 
