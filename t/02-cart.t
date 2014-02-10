@@ -11,10 +11,10 @@ use Test::Most tests => 112;
 use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
-use Interchange6::Cart::Item;
+use Interchange6::Cart::Product;
 use Interchange6::Hook;
 
-my ( $args, $cart, $item, $ret, $modified, $hook );
+my ( $args, $cart, $product, $ret, $modified, $hook );
 
 # create a DateTime oject for later comparison
 
@@ -48,21 +48,21 @@ cmp_ok( $cart->last_modified, '>=', $modified,
 $modified = $cart->last_modified;
 sleep 1;
 
-# Items
+# Products
 
 cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
 
 $args = { sku => 'ABC', name => 'Foobar', price => 42 };
 
-lives_ok { $item = 'Interchange6::Cart::Item'->new($args) }
-"create Interchange::Cart::Item";
+lives_ok { $product = 'Interchange6::Cart::Product'->new($args) }
+"create Interchange::Cart::Product";
 
 cmp_ok( $cart->subtotal, '==', 0, "Check subtotal" );
 cmp_ok( $cart->total,    '==', 0, "Check total" );
 
-lives_ok { $cart->add($item) } "add item to cart";
+lives_ok { $cart->add($product) } "add product to cart";
 
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
 cmp_ok( $cart->is_empty, '==', 0, "cart should not be empty" );
 
@@ -87,21 +87,21 @@ cmp_ok( $cart->last_modified, '>', $modified,
 $modified = $cart->last_modified;
 sleep 1;
 
-# add has item to cart
+# add has product to cart
 
-lives_ok { $cart->add( %{$args} ) } "add item hash to cart";
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+lives_ok { $cart->add( %{$args} ) } "add product hash to cart";
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 lives_ok { $cart->clear } "clear cart";
 
-# add has item to cart
+# add has product to cart
 
-lives_ok { $cart->add($args) } "add item hashref to cart";
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+lives_ok { $cart->add($args) } "add product hashref to cart";
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-# add item a second time
+# add product a second time
 
-lives_ok { $cart->add($args) } "add item hashref to cart again";
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+lives_ok { $cart->add($args) } "add product hashref to cart again";
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
 cmp_ok( $cart->last_modified, '>', $modified,
     "last_modified updated: " . $cart->last_modified );
@@ -109,7 +109,7 @@ cmp_ok( $cart->last_modified, '>', $modified,
 $modified = $cart->last_modified;
 sleep 1;
 
-lives_ok { $cart->remove('ABC') } "Remove item from cart by sku";
+lives_ok { $cart->remove('ABC') } "Remove product from cart by sku";
 
 cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
 
@@ -119,42 +119,43 @@ cmp_ok( $cart->last_modified, '>', $modified,
 $modified = $cart->last_modified;
 sleep 1;
 
-# do some things with multiple items
+# do some things with multiple products
 
-lives_ok { $cart->add($args) } "add item hashref to cart";
+lives_ok { $cart->add($args) } "add product hashref to cart";
 
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-cmp_ok( $cart->get_items->[0]->quantity, '==', 1, "item quantity is 1" );
+cmp_ok( $cart->get_products->[0]->quantity, '==', 1, "product quantity is 1" );
 
-lives_ok { $cart->add($args) } "add same item hashref to cart";
+lives_ok { $cart->add($args) } "add same product hashref to cart";
 
-cmp_ok( $cart->count, '==', 1, "should have one item in cart" );
+cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-cmp_ok( $cart->items->[0]->quantity, '==', 2, "item quantity is 3" );
+cmp_ok( $cart->products->[0]->quantity, '==', 2, "product quantity is 3" );
 
 $args = { sku => 'DEF', name => 'Foo', price => 10 };
 
-lives_ok { $cart->add($args) } "add second item hashref to cart";
+lives_ok { $cart->add($args) } "add second product hashref to cart";
 
-cmp_ok( $cart->items->[0]->quantity,
-    '==', 2, "quantity of 1st item is still 2" );
+cmp_ok( $cart->products->[0]->quantity,
+    '==', 2, "quantity of 1st product is still 2" );
 
-cmp_ok( $cart->count, '==', 2, "should have 2 items in cart" );
+cmp_ok( $cart->count, '==', 2, "should have 2 products in cart" );
 
 $args = { sku => 'GHI', name => 'Bar', price => 15 };
 
-lives_ok { $cart->add($args) } "add third item hashref to cart";
+lives_ok { $cart->add($args) } "add third product hashref to cart";
 
-cmp_ok( $cart->count, '==', 3, "should have 3 items in cart" );
+cmp_ok( $cart->count, '==', 3, "should have 3 products in cart" );
 
 cmp_ok( $cart->quantity, '==', 4, "cart quantity is 4" );
 
-lives_ok { $cart->update( GHI => 7 ) } "change quantity of 3rd item to 7";
+lives_ok { $cart->update( GHI => 7 ) } "change quantity of 3rd product to 7";
 
-cmp_ok( $cart->count, '==', 3, "should still have 3 items in cart" );
+cmp_ok( $cart->count, '==', 3, "should still have 3 products in cart" );
 
-cmp_ok( $cart->items->[2]->quantity, '==', 7, "quantity of 3rd item is 7" );
+cmp_ok( $cart->products->[2]->quantity,
+    '==', 7, "quantity of 3rd product is 7" );
 
 cmp_ok( $cart->quantity, '==', 10, "cart quantity is 10" );
 
@@ -167,28 +168,28 @@ cmp_ok( $cart->last_modified, '>', $modified,
 $modified = $cart->last_modified;
 sleep 1;
 
-# try to add empty and null items;
+# try to add empty and null products;
 
-throws_ok { $cart->add() } qr/Missing required arg/, "try to add undef item";
+throws_ok { $cart->add() } qr/Missing required arg/, "try to add undef product";
 
 cmp_ok( $cart->last_modified, '==', $modified,
     "last_modified unchanged: " . $cart->last_modified );
 
 throws_ok { $cart->add( {} ) } qr/Missing required arg/,
-  "try to add empty item";
+  "try to add empty product";
 
 cmp_ok( $cart->last_modified, '==', $modified,
     "last_modified unchanged: " . $cart->last_modified );
 
-cmp_ok( $cart->count, '==', 3, "should still have 3 items in cart" );
+cmp_ok( $cart->count, '==', 3, "should still have 3 products in cart" );
 
 cmp_ok( $cart->quantity, '==', 10, "cart quantity is still 10" );
 
-# remove 1st item by setting quantity to zero
+# remove 1st product by setting quantity to zero
 
-lives_ok { $cart->update( ABC => 0 ) } "change quantity of 1st item to 0";
+lives_ok { $cart->update( ABC => 0 ) } "change quantity of 1st product to 0";
 
-cmp_ok( $cart->count, '==', 2, "should have 2 items in cart" );
+cmp_ok( $cart->count, '==', 2, "should have 2 products in cart" );
 
 cmp_ok( $cart->quantity, '==', 8, "cart quantity is 8" );
 
@@ -204,9 +205,9 @@ lives_ok {
     $hook = Interchange6::Hook->new(
         name => 'before_cart_remove',
         code => sub {
-            my ( $cart, $item ) = @_;
-            if ( $item->sku eq '123' ) {
-                $cart->set_error('Item not removed due to hook.');
+            my ( $cart, $product ) = @_;
+            if ( $product->sku eq '123' ) {
+                $cart->set_error('Product not removed due to hook.');
             }
         }
     );
@@ -215,28 +216,31 @@ lives_ok {
 
 lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-$item = { sku => 'DEF', name => 'Foobar', price => 5 };
-lives_ok { $cart->add($item) } "add 1st item";
+$product = { sku => 'DEF', name => 'Foobar', price => 5 };
+lives_ok { $cart->add($product) } "add 1st product";
 
-$item = { sku => '123', name => 'Foobar', price => 5 };
-lives_ok { $cart->add($item) } "add 2nd item";
+$product = { sku => '123', name => 'Foobar', price => 5 };
+lives_ok { $cart->add($product) } "add 2nd product";
 
-cmp_ok( $cart->count, '==', 2, "2 items in cart" );
+cmp_ok( $cart->count, '==', 2, "2 products in cart" );
 
-ok( !$cart->remove('123'), "attempt to remove item fails due to hook." );
+ok( !$cart->remove('123'), "attempt to remove product fails due to hook." );
 
-like( $cart->error, qr/Item not removed due to hook/,
-    "Error: " . $cart->error );
+like(
+    $cart->error,
+    qr/Product not removed due to hook/,
+    "Error: " . $cart->error
+);
 
-cmp_ok( $cart->count, '==', 2, "2 items in cart" );
+cmp_ok( $cart->count, '==', 2, "2 products in cart" );
 
-ok( $cart->remove('DEF'), "remove other item from cart." );
+ok( $cart->remove('DEF'), "remove other product from cart." );
 
-cmp_ok( $cart->count, '==', 1, "1 item in cart" );
+cmp_ok( $cart->count, '==', 1, "1 product in cart" );
 
 lives_ok { $cart->replace_hook( 'before_cart_remove', [] ) } "Remove hook";
 
-lives_ok { $cart->remove('123') } "Remove item";
+lives_ok { $cart->remove('123') } "Remove product";
 
 cmp_ok( $cart->is_empty, '==', 1, "cart is empty" );
 
@@ -246,9 +250,9 @@ lives_ok {
     $hook = Interchange6::Hook->new(
         name => 'before_cart_add',
         code => sub {
-            my ( $cart, $item ) = @_;
-            if ( $item->price > 3 ) {
-                $cart->set_error('Item not added due to hook.');
+            my ( $cart, $product ) = @_;
+            if ( $product->price > 3 ) {
+                $cart->set_error('Product not added due to hook.');
             }
         }
     );
@@ -257,23 +261,23 @@ lives_ok {
 
 lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-$item = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
+$product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
 
-lives_ok { $cart->add($item) } "add item with price = 3";
+lives_ok { $cart->add($product) } "add product with price = 3";
 
 cmp_ok( $cart->has_error, '==', 0, "No error" );
 
-cmp_ok( $cart->count, '==', 1, "1 item in cart" );
+cmp_ok( $cart->count, '==', 1, "1 product in cart" );
 
-$item = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
+$product = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
 
-lives_ok { $cart->add($item) } "add item with price = 3.34";
+lives_ok { $cart->add($product) } "add product with price = 3.34";
 
 cmp_ok( $cart->has_error, '==', 1, "We have an error" );
 
 cmp_ok(
     $cart->error, 'eq',
-    'Item not added due to hook.',
+    'Product not added due to hook.',
     "Error is: " . $cart->error
 );
 
@@ -281,8 +285,8 @@ cmp_ok(
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
-$item = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
-lives_ok { $cart->add($item) } "add item which will be clobbered by seed";
+$product = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
+lives_ok { $cart->add($product) } "add product which will be clobbered by seed";
 
 lives_ok {
     $cart->seed(
@@ -292,9 +296,9 @@ lives_ok {
         ]
     );
 }
-"Seed cart with 2 items";
+"Seed cart with 2 products";
 
-cmp_ok( $cart->count, '==', 2, "Should be 2 items in cart" );
+cmp_ok( $cart->count, '==', 2, "Should be 2 products in cart" );
 
 cmp_ok( $cart->quantity, '==', 3, "Quantity should be 3" );
 

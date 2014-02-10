@@ -9,7 +9,7 @@ use Test::More tests => 11;
 
 use Interchange6::Cart;
 
-my ( $cart, $item, $ret );
+my ( $cart, $product, $ret );
 
 $cart = Interchange6::Cart->new;
 
@@ -37,11 +37,11 @@ ok( $ret == 0, "Total: $ret" );
 
 $cart->clear_cost;
 
-# relative amount to cart with one item
-$item = { sku => 'ABC', name => 'Foobar', price => 22 };
-$ret = $cart->add($item);
+# relative amount to cart with one product
+$product = { sku => 'ABC', name => 'Foobar', price => 22 };
+$ret = $cart->add($product);
 
-cmp_ok( $cart->count, '==', 1, "one item in cart" );
+cmp_ok( $cart->count, '==', 1, "one product in cart" );
 
 $cart->apply_cost( amount => 0.5, relative => 1, name => 'megatax' );
 
@@ -56,7 +56,7 @@ ok( $ret == 11, "Cost: $ret" );
 
 $cart->clear_cost;
 
-# relative and inclusive amount to cart with one item
+# relative and inclusive amount to cart with one product
 $cart->apply_cost(
     amount    => 0.5,
     relative  => 1,
