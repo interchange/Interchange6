@@ -54,7 +54,7 @@ cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
 
 $args = { sku => 'ABC', name => 'Foobar', price => 42 };
 
-lives_ok { $product = 'Interchange6::Cart::Product'->new($args) }
+lives_ok { $product = Interchange6::Cart::Product->new($args) }
 "create Interchange::Cart::Product";
 
 cmp_ok( $cart->subtotal, '==', 0, "Check subtotal" );

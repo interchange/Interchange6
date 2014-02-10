@@ -37,7 +37,7 @@ Interchange6::Hook - Hook class for Interchange6 Shop Machine
 
 =cut
 
-=method register_hook ($hook_name, [$properties], $code)
+=head2 method register_hook ($hook_name, [$properties], $code)
 
     hook 'before', {apps => ['main']}, sub {...};
 
@@ -55,7 +55,7 @@ Currently supported properties:
 
 =back
 
-=method register_hooks_name
+=head2 register_hooks_name
 
 Add a new hook name, so application developers can insert some code at this point.
 

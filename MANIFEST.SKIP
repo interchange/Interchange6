@@ -2,4 +2,5 @@
 ^.*\.tar.gz$
 ^.*.bak
 ^.*.old
+^.*.swp
 .gitignore
