@@ -208,7 +208,7 @@ lives_ok {
         code => sub {
             my ( $cart, $item ) = @_;
             if ( $item->sku eq '123' ) {
-                $cart->_set_error('Item not removed due to hook.');
+                $cart->set_error('Item not removed due to hook.');
             }
         }
     );
@@ -250,7 +250,7 @@ lives_ok {
         code => sub {
             my ( $cart, $item ) = @_;
             if ( $item->price > 3 ) {
-                $cart->_set_error('Item not added due to hook.');
+                $cart->set_error('Item not added due to hook.');
             }
         }
     );
