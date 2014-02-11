@@ -32,6 +32,7 @@ has costs => (
         clear_cost => 'clear',
         cost_get   => 'get',
         _cost_push => 'push',
+        get_costs  => 'elements',
     },
 );
 
@@ -47,6 +48,27 @@ has created => (
 has id => (
     is  => 'rw',
     isa => Str,
+);
+
+has last_modified => (
+    is      => 'rwp',
+    isa     => DateAndTime,
+    default => sub { DateTime->now },
+);
+
+has modifiers => (
+    is      => 'rw',
+    isa     => ArrayRef,
+    default => sub { [] },
+);
+
+has name => (
+    is       => 'rw',
+    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    default  => CART_DEFAULT,
+    required => 1,
+    reader   => 'get_name',
+    writer   => 'set_name',
 );
 
 # in addition to the standard accessors products has a number of public and
@@ -70,27 +92,6 @@ has products => (
     },
     reader => 'get_products',
     writer => 'set_products',
-);
-
-has last_modified => (
-    is      => 'rwp',
-    isa     => DateAndTime,
-    default => sub { DateTime->now },
-);
-
-has modifiers => (
-    is      => 'rw',
-    isa     => ArrayRef,
-    default => sub { [] },
-);
-
-has name => (
-    is       => 'rw',
-    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
-    default  => CART_DEFAULT,
-    required => 1,
-    reader   => 'get_name',
-    writer   => 'set_name',
 );
 
 has sessions_id => (
@@ -160,61 +161,8 @@ after clear_cost => sub {
     $self->clear_total;
 };
 
-around clear => sub {
-    my ( $orig, $self ) = ( shift, shift );
-    my $ret;
-
-    $self->clear_error;
-
-    # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_clear', $self );
-    return if $self->has_error;
-
-    # fire off the clear
-    $ret = $orig->( $self, @_ );
-
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->_set_last_modified( DateTime->now );
-
-    # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_clear', $self );
-    return if $self->has_error;
-
-    return $ret;
-};
-
-around set_name => sub {
-    my ( $orig, $self ) = ( shift, shift );
-    my $ret;
-
-    $self->clear_error;
-
-    # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_rename', $self );
-    return if $self->has_error;
-
-    # fire off the clear
-    $ret = $orig->( $self, @_ );
-
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->_set_last_modified( DateTime->now );
-
-    # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_rename', $self );
-    return if $self->has_error;
-
-    return $ret;
-};
-
 around add_hook => sub {
     my ( $orig, $self ) = ( shift, shift );
-
-    # saving caller information
-    my ( $package, $file, $line ) = caller(4);    # deep to 4 : user's app code
-    my $add_hook_caller = [ $package, $file, $line ];
-
     my ($hook) = @_;
     my $name = $hook->name;
 
@@ -223,6 +171,51 @@ around add_hook => sub {
 
     # for now extra hooks cannot be added so die if we got here
     croak "add_hook failed";
+};
+
+around clear => sub {
+    my ( $orig, $self ) = ( shift, shift );
+
+    $self->clear_error;
+
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_clear', $self );
+    return if $self->has_error;
+
+    # fire off the clear
+    $orig->( $self, @_ );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
+
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_clear', $self );
+
+    return;
+};
+
+around set_name => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my $ret;
+
+    $self->clear_error;
+
+    my $old_name = $self->get_name;
+
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
+    return if $self->has_error;
+
+    # fire off the rename
+    $orig->( $self, @_ );
+
+    $self->_set_last_modified( DateTime->now );
+
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
+
+    return $self->get_name;
 };
 
 # public methods
@@ -309,7 +302,7 @@ sub apply_cost {
 
     $self->_cost_push( \%args );
 
-    # clear cache for total
+    # clear cache for total if this is not an inclusive cost
     $self->clear_total unless $args{inclusive};
 }
 
@@ -326,7 +319,7 @@ sub cost {
         elsif ( $loc =~ /\S/ ) {
 
             # cost by name
-            for my $c ( @{ $self->{costs} } ) {
+            for my $c ( $self->get_costs ) {
                 if ( $c->{name} eq $loc ) {
                     $cost = $c;
                 }
@@ -335,7 +328,7 @@ sub cost {
     }
 
     if ( defined $cost ) {
-        $ret = $self->_calculate( $self->{subtotal}, $cost, 1 );
+        $ret = $self->_calculate( $self->subtotal, $cost, 1 );
     }
 
     return $ret;
@@ -432,6 +425,7 @@ sub sessions_id {
         my %data = ( sessions_id => $sessions_id );
 
         $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
+        return if $self->has_error;
 
         $self->_set_sessions_id($sessions_id);
 
@@ -498,6 +492,7 @@ sub users_id {
         my %data = ( users_id => $users_id );
 
         $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
+        return if $self->has_error;
 
         $self->_set_users_id($users_id);
 
@@ -553,8 +548,6 @@ sub name {
     if ( @_ > 0 ) {
         $self->set_name( $_[0] );
     }
-
-    #$self->set_name($_[0]) if (@_ > 0);
     return $self->get_name;
 }
 
