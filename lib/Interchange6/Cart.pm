@@ -56,12 +56,6 @@ has last_modified => (
     default => sub { DateTime->now },
 );
 
-has modifiers => (
-    is      => 'rw',
-    isa     => ArrayRef,
-    default => sub { [] },
-);
-
 has name => (
     is       => 'rw',
     isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
