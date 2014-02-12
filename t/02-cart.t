@@ -131,7 +131,7 @@ lives_ok { $cart->add($args) } "add same product hashref to cart";
 
 cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-cmp_ok( $cart->products->[0]->quantity, '==', 2, "product quantity is 3" );
+cmp_ok( $cart->products->[0]->quantity, '==', 2, "product quantity is 2" );
 
 $args = { sku => 'DEF', name => 'Foo', price => 10 };
 

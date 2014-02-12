@@ -217,7 +217,7 @@ around set_name => sub {
 sub add {
     my $self    = shift;
     my $product = $_[0];
-    my ( $index, $oldproduct );
+    my ( $index, $oldproduct, $update );
 
     $self->clear_error unless caller eq __PACKAGE__;
 
@@ -248,7 +248,7 @@ sub add {
         unless ( blessed($product)
             && $product->isa('Interchange6::Cart::Product') )
         {
-            $self->_set_error("failed to create product.");
+            $self->set_error("failed to create product.");
             return;
         }
     }
@@ -272,6 +272,8 @@ sub add {
         $product->quantity( $oldproduct->quantity + $product->quantity );
 
         $self->_product_set( $index, $product );
+
+        $update = 1;
     }
     else {
 
@@ -281,8 +283,7 @@ sub add {
     }
 
     # final hook
-    $self->execute_hook( 'after_cart_add', $self, $product );
-    return if $self->has_error;
+    $self->execute_hook( 'after_cart_add', $self, $product, $update );
 
     $self->clear_subtotal;
     $self->clear_total;
@@ -386,7 +387,7 @@ sub remove {
     }
 
     # product missing
-    $self->_set_error("Product not found in cart: $arg.");
+    $self->set_error("Product not found in cart: $arg.");
     return;
 }
 
@@ -405,7 +406,7 @@ sub seed {
         $self->add($product);
     }
     push( @errors, $self->error ) if $self->has_error;
-    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 
     return $self->products;
 }
@@ -431,7 +432,7 @@ sub sessions_id {
 
 sub update {
     my ( $self, @args ) = @_;
-    my ( $sku, $qty, $product, $new_product, @errors );
+    my ( $sku, $qty, $product, $update, @errors );
 
     $self->clear_error;
 
@@ -443,7 +444,7 @@ sub update {
         push( @errors, $self->error ) if $self->has_error;
 
         unless ( $product = $self->find($sku) ) {
-            $self->_set_error("Product for $sku not found in cart.");
+            $self->set_error("Product for $sku not found in cart.");
             next ARGS;
         }
 
@@ -454,14 +455,12 @@ sub update {
         }
 
         # jump to next product if quantity stays the same
-        next if $qty == $product->{quantity};
+        next if $qty == $product->quantity;
 
         # run hook before updating the cart
-        $new_product = $product;
-        $new_product->quantity($qty);
+        $update = { quantity => $qty };
 
-        $self->execute_hook( 'before_cart_update', $self, $product,
-            $new_product );
+        $self->execute_hook( 'before_cart_update', $self, $product, $update );
         next ARGS if $self->has_error;
 
         $product->quantity($qty);
@@ -470,11 +469,10 @@ sub update {
         $self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
-        $self->execute_hook( 'after_cart_update', $self, $product,
-            $new_product );
+        $self->execute_hook( 'after_cart_update', $self, $product, $update );
     }
     push( @errors, $self->error ) if $self->has_error;
-    $self->_set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 }
 
 sub users_id {
@@ -592,7 +590,7 @@ This binds a coderef to an installed hook.
       code => sub {
           my ( $cart, $product ) = @_;
           if ( $product->sku eq '123' ) {
-              $cart->_set_error('Product not removed due to hook.');
+              $cart->set_error('Product not removed due to hook.');
           }
       }
   )
