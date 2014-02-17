@@ -19,7 +19,7 @@ with 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
-use constant CART_DEFAULT    => 'main';
+use constant CART_DEFAULT => 'main';
 
 # attributes
 
@@ -34,6 +34,7 @@ has costs => (
         _cost_push => 'push',
         get_costs  => 'elements',
     },
+    init_arg => undef,
 );
 
 has created => (
@@ -84,8 +85,9 @@ has products => (
         _product_push  => 'push',
         _product_set   => 'set',
     },
-    reader => 'get_products',
-    writer => 'set_products',
+    reader   => 'get_products',
+    writer   => 'set_products',
+    init_arg => undef,
 );
 
 has sessions_id => (
@@ -102,19 +104,21 @@ has sessions_id => (
 # the new value for us
 
 has subtotal => (
-    is      => 'ro',
-    isa     => Num,
-    builder => '_build_subtotal',
-    lazy    => 1,
-    clearer => 1,
+    is       => 'ro',
+    isa      => Num,
+    builder  => '_build_subtotal',
+    lazy     => 1,
+    clearer  => 1,
+    init_arg => undef,
 );
 
 has total => (
-    is      => 'ro',
-    isa     => Num,
-    builder => '_build_total',
-    lazy    => 1,
-    clearer => 1,
+    is       => 'ro',
+    isa      => Num,
+    builder  => '_build_total',
+    lazy     => 1,
+    clearer  => 1,
+    init_arg => undef,
 );
 
 has users_id => (
