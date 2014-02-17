@@ -223,7 +223,7 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
-    $self->clear_error unless caller eq __PACKAGE__;
+    $self->clear_error;
 
     unless ( blessed($product) && $product->isa('Interchange6::Cart::Product') )
     {
@@ -395,19 +395,26 @@ sub remove {
     return;
 }
 
+# seed needs to add products directly and must not use $cart->add in order
+# to avoid hooks
 sub seed {
     my ( $self, $product_ref ) = @_;
-    my ( $product, @errors );
+    my ( $args, $product, @errors );
 
-    # clear existing products
-    $self->clear;
-
-    for $product ( @{ $product_ref || [] } ) {
+  PRODUCT: for $args ( @{ $product_ref || [] } ) {
 
         # stash any existing error
         push( @errors, $self->error ) if $self->has_error;
 
-        $self->add($product);
+        $product = Interchange6::Cart::Product->new($args);
+        unless ( blessed($product)
+            && $product->isa('Interchange6::Cart::Product') )
+        {
+            $self->set_error("failed to create product.");
+            next PRODUCT;
+        }
+
+        $self->_product_push($product);
     }
     push( @errors, $self->error ) if $self->has_error;
     $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;

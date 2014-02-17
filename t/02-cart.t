@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper;
 use DateTime;
 
-use Test::Most tests => 112;
+use Test::Most tests => 111;
 use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
@@ -285,9 +285,6 @@ cmp_ok(
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
-$product = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
-lives_ok { $cart->add($product) } "add product which will be clobbered by seed";
-
 lives_ok {
     $cart->seed(
         [
@@ -417,5 +414,3 @@ ok(
 "Testing after_set_sessions_id hook with 513457188818705086798161933370395265.\n",
     "Test warning from after_set_sessions_id hook."
 ) || diag "Warning: $warns->[1].";
-
-done_testing;
