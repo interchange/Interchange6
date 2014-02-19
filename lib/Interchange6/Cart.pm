@@ -91,10 +91,11 @@ has products => (
 );
 
 has sessions_id => (
-    is     => 'rwp',
-    isa    => Str,
-    reader => 'get_sessions_id',
-    writer => '_set_sessions_id',
+    is      => 'rwp',
+    isa     => Str,
+    clearer => 1,
+    reader  => 'get_sessions_id',
+    writer  => '_set_sessions_id',
 );
 
 # subtotal and total are declared lazy with a builder and clearer so that
@@ -433,7 +434,14 @@ sub sessions_id {
         $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
         return if $self->has_error;
 
-        $self->_set_sessions_id($sessions_id);
+        if ( defined $sessions_id ) {
+            $self->_set_sessions_id($sessions_id);
+        }
+        else {
+            # magic undef used on logout to prevent cart contents from
+            # beging deleted on session->destroy
+            $self->clear_sessions_id;
+        }
 
         $self->execute_hook( 'after_cart_set_sessions_id', $self, \%data );
     }
