@@ -4,7 +4,6 @@ package Interchange6::Cart;
 
 use strict;
 use Carp;
-use Data::Dumper;
 use DateTime;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';

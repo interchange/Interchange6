@@ -30,8 +30,8 @@ my $defs = [
           sub { "The value `$_[0]' is not a Interchange6::Hook object." },
     },
     {
-        name => 'NotEmpty',
-        test => sub { $_[0] =~ /\S/ },
+        name    => 'NotEmpty',
+        test    => sub { $_[0] =~ /\S/ },
         message => sub { "Must contain some non-space characters." }
     },
     {
