@@ -73,6 +73,17 @@ has price => (
     required => 1,
 );
 
+=item uri
+
+Product uri
+
+=cut
+
+has uri => (
+    is       => 'rw',
+    isa      => VarChar [255],
+);
+
 =back
 
 =cut
