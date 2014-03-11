@@ -13,8 +13,6 @@ has hooks => (
     lazy    => 1,
 );
 
-sub BUILD { }
-
 # mst++ for the hint
 sub _build_hooks {
     my ($self) = @_;
@@ -92,6 +90,34 @@ sub supported_hooks {
 }
 
 1;
+
+=head1 NAME
+
+Interchange6::Role::Hookable - hooks for Interchange6
+
+=head1 METHODS
+
+=head2 add_hook
+
+Binds a coderef to an installed hook.
+
+=head2 execute_hook
+
+Execute the hook at the given position.
+
+=head2 has_hook
+
+Boolean flag to tells if the hook is registered or not.
+
+=head2 replace_hook
+
+Allows the caller to replace the current list of hooks at the given position
+this is useful if the object where this role is composed wants to compile the
+hooks.
+
+=head2 supported_hooks
+
+Adds the base hook names used by Interchange6.
 
 =head1 AUTHOR
 
