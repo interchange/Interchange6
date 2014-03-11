@@ -19,7 +19,7 @@ WriteMakefile(
         'Moo' => 0,
         'MooX::HandlesVia' => 0,
         'DateTime' => 0,
-	    'Interchange6::Schema'     => 0.004,
+	    'Interchange6::Schema'     => 0.018,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Interchange6-*' },
