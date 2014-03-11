@@ -28,3 +28,41 @@ sub error {
 };
 
 1;
+
+=head1 NAME
+
+Interchange6::Role::Errors - errors role
+
+=head1 METHODS
+
+=head2 error
+
+Alias for get_error.
+
+=head2 errors       => 'all',
+
+Returns errors as array.
+
+=head2 has_error    => 'count',
+
+Alias for has_errors.
+
+=head2 has_errors   => 'count',
+
+Actually returns the error count so 0 for no errors and 1+ if there are errors.
+
+=head2 clear_error  => 'clear',
+
+Alias for clear_errors.
+
+=head2 clear_errors => 'clear',
+
+Clears all errors.
+
+=head2 set_error    => 'push',
+
+Adds add error.
+
+=head2 get_error
+
+Returns all errors as a scalar joined with ':'.
