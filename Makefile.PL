@@ -17,6 +17,7 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'Moo' => 0,
+        'MooX::HandlesVia' => 0,
         'DateTime' => 0,
 	    'Interchange6::Schema'     => 0.004,
     },

@@ -2,778 +2,868 @@
 
 package Interchange6::Cart;
 
-use DateTime;
 use strict;
-use warnings;
+use Carp;
+use DateTime;
+use Interchange6::Cart::Product;
+use Scalar::Util 'blessed';
+use Try::Tiny;
+use Moo;
+use MooX::HandlesVia;
+use Interchange6::Types;
+use Interchange6::Hook;
+
+with 'Interchange6::Role::Errors';
+with 'Interchange6::Role::Hookable';
+
+use namespace::clean;
 
 use constant CART_DEFAULT => 'main';
 
-=head1 NAME 
+# attributes
 
-Interchange6::Cart - Cart class for Interchange6 Shop Machine
+has costs => (
+    is          => 'rwp',
+    isa         => ArrayRef [HashRef],
+    default     => sub { [] },
+    handles_via => 'Array',
+    handles     => {
+        clear_cost => 'clear',
+        cost_get   => 'get',
+        _cost_push => 'push',
+        get_costs  => 'elements',
+    },
+    init_arg => undef,
+);
 
-=head1 DESCRIPTION
+has created => (
+    is      => 'ro',
+    isa     => DateAndTime,
+    default => sub { DateTime->now },
+);
 
-Generic cart class for L<Interchange6>.
+# Cart id can be used for subclasses, e.g. primary key value for carts in the
+# database.
 
-=head2 CART ITEMS
+has id => (
+    is  => 'rw',
+    isa => Str,
+);
 
-Each item in the cart has at least the following attributes:
+has last_modified => (
+    is      => 'rwp',
+    isa     => DateAndTime,
+    default => sub { DateTime->now },
+);
 
-=over 4
+has name => (
+    is       => 'rw',
+    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    default  => CART_DEFAULT,
+    required => 1,
+    reader   => 'get_name',
+    writer   => 'set_name',
+);
 
-=item sku
+# in addition to the standard accessors products has a number of public and
+# private methods supplied to us by MooX::HandlesVia
 
-Unique item identifier.
+has products => (
+    is  => 'rwp',
+    isa => ArrayRef [ InstanceOf ['Interchange::Cart::Product'] ],
+    default     => sub { [] },
+    handles_via => 'Array',
+    handles     => {
+        clear          => 'clear',
+        count          => 'count',
+        is_empty       => 'is_empty',
+        product_get    => 'get',
+        product_index  => 'first_index',
+        products_array => 'elements',
+        _delete        => 'delete',
+        _product_push  => 'push',
+        _product_set   => 'set',
+    },
+    reader   => 'get_products',
+    writer   => 'set_products',
+    init_arg => undef,
+);
 
-=item name
+has sessions_id => (
+    is      => 'rwp',
+    isa     => Str,
+    clearer => 1,
+    reader  => 'get_sessions_id',
+    writer  => '_set_sessions_id',
+);
 
-Item name.
+# subtotal and total are declared lazy with a builder and clearer so that
+# instead of tracking whether their values are cached we can just call:
+#   $self->clear_subtotal
+# and then when the accessor is next called the builder method calculates
+# the new value for us
 
-=item quantity
+has subtotal => (
+    is       => 'ro',
+    isa      => Num,
+    builder  => '_build_subtotal',
+    lazy     => 1,
+    clearer  => 1,
+    init_arg => undef,
+);
 
-Item quantity.
+has total => (
+    is       => 'ro',
+    isa      => Num,
+    builder  => '_build_total',
+    lazy     => 1,
+    clearer  => 1,
+    init_arg => undef,
+);
 
-=item price
+has users_id => (
+    is     => 'rwp',
+    isa    => Str,
+    reader => 'get_users_id',
+    writer => '_set_users_id',
+);
 
-Item price.
+# builders
 
-=back
+sub _build_subtotal {
+    my $self = shift;
 
-=head1 CONSTRUCTOR
+    my $subtotal = 0;
 
-=head2 new
-
-=cut
-
-sub new {
-    my ($class, $self, %args);
-
-    $class = shift;
-    %args = @_;
-
-    my $time = DateTime->now;
-
-    $self = {error => '', items => [], modifiers => [],
-             costs => [], subtotal => 0, total => 0,
-             cache_subtotal => 1, cache_total => 1,
-             created => $time, last_modified => $time,
-    };
-
-    if ($args{name}) {
-	$self->{name} = $args{name};
+    for my $product ( $self->products_array ) {
+        $subtotal += $product->price * $product->quantity;
     }
-    else {
-	$self->{name} = CART_DEFAULT;
-    }
 
-    for my $ts (qw/created last_modified/) {
-        my $time = $args{$ts};
-        if (defined $time) {
-            if ($time->isa('DateTime')) {
-                $self->{$ts} = $time;
-            }
-            else {
-	            $self->{error} = '$ts must be DateTime object';
-                return;
-            }
-        }
-    }
-
-    if ($args{modifiers}) {
-	$self->{modifiers} = $args{modifiers};
-    }
-
-    if ($args{run_hooks}) {
-	$self->{run_hooks} = $args{run_hooks};
-    }
-
-    bless $self, $class;
-
-    $self->init(%args);
-
-    return $self;
+    return $subtotal;
 }
 
-=head2 init
+sub _build_total {
+    my $self = shift;
 
-Initializer which receives the constructor arguments, but does nothing.
-May be overridden in a subclass.
+    my $subtotal = $self->subtotal;
 
-=cut
+    my $total = $subtotal + $self->_calculate($subtotal);
 
-sub init {
-    return 1;
+    return $total;
+}
+
+# before/after/around various methods
+
+after clear_cost => sub {
+    my $self = shift;
+    $self->clear_total;
 };
 
-=head1 METHODS
+around add_hook => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my ($hook) = @_;
+    my $name = $hook->name;
 
-=head2 items
+    # if that hook belongs to the app, register it now and return
+    return $self->$orig(@_) if $self->has_hook($name);
 
-Returns items in the cart.
+    # for now extra hooks cannot be added so die if we got here
+    croak "add_hook failed";
+};
 
-=cut
+around clear => sub {
+    my ( $orig, $self ) = ( shift, shift );
 
-sub items {
-    my ($self) = shift;
-
-    return $self->{items};
-}
-
-=head2 subtotal
-
-Returns subtotal of the cart.
-
-=cut
-
-sub subtotal {
-    my ($self) = shift;
-
-    if ($self->{cache_subtotal}) {
-	return $self->{subtotal};
-    }
-
-    $self->{subtotal} = 0;
-
-    for my $item (@{$self->{items}}) {
-	$self->{subtotal} += $item->{price} * $item->{quantity};
-    }
-
-    $self->{cache_subtotal} = 1;
-
-    return $self->{subtotal};
-}
-
-=head2 total
-
-Returns total of the cart.
-
-=cut
-
-sub total {
-    my ($self) = shift;
-    my ($subtotal);
-
-    if ($self->{cache_total}) {
-	return $self->{total};
-    }
-
-    $self->{total} = $subtotal = $self->subtotal();
-
-    # calculate costs
-    $self->{total} += $self->_calculate($subtotal);
-
-    $self->{cache_total} = 1;
-
-    return $self->{total};
-}
- 
-=head2 add $item
-
-Add item to the cart. Returns item in case of success.
-
-The item is a hash (reference) which is subject to the following
-conditions:
-
-=over 4
-
-=item sku
-
-Item identifier is required.
-
-=item name
-
-Item name is required.
-
-=item quantity
-
-Item quantity is optional and has to be a natural number greater
-than zero. Default for quantity is 1.
-
-=item price
-
-Item price is required and a positive number.
-
-Price is required, because you want to maintain the price that was valid at the time of adding to the cart. Should the price in the shop change in the meantime, it will maintain this price. If you would like to update the pages, you have to do it before loading the cart page on your shop.
-
-
-B<Example:> Add 5 BMX2012 products to the cart
-
-	$cart->add( sku => 'BMX2012', quantity => 5, price => 200);
-
-B<Example:> Add a BMX2012 product to the cart.
-
-	$cart->add( sku => 'BMX2012', price => 200);
-
-=back
-
-=cut
-
-sub add {
-    my $self = shift;
-    my (%item, $ret);
-
-    if (ref($_[0])) {
-	# copy item
-	%item = %{$_[0]};
-    }
-    else {
-	%item = @_;
-    }
-
-    # run hooks before validating item
-    $self->_run_hook('before_cart_add_validate', $self, \%item);
-
-    # validate item
-    unless (exists $item{sku} && defined $item{sku} && $item{sku} =~ /\S/) {
-	$self->{error} = 'Item added without SKU.';
-	return;
-    }
-
-    unless (exists $item{name} && defined $item{name} && $item{name} =~ /\S/) {
-	$self->{error} = "Item $item{sku} added without a name.";
-	return;
-    }
-
-    if (exists $item{quantity} && defined $item{quantity}) {
-	unless ($item{quantity} =~ /^(\d+)$/ && $item{quantity} > 0) {
-	    $self->{error} = "Item $item{sku} added with invalid quantity $item{quantity}.";
-	    return;
-	}
-    }
-    else {
-	$item{quantity} = 1;
-    }
-
-    unless (exists $item{price} && defined $item{price}
-	    && $item{price} =~ /^(\d+)(\.\d+)?$/ && $item{price} > 0) {
-	$self->{error} = "Item $item{sku} added with invalid price.";
-	return;
-    }
-  
-    # run hooks before adding item to cart
-    $self->_run_hook('before_cart_add', $self, \%item);
-
-    if (exists $item{error}) {
-	# one of the hooks denied the item
-	$self->{error} = $item{error};
-	return;
-    }
-
-    # clear cache flags
-    $self->{cache_subtotal} = $self->{cache_total} = 0;
-
-    unless ($ret = $self->_combine(\%item)) {
-        push @{$self->{items}}, \%item;
-        $self->{last_modified} = DateTime->now;
-    }
-
-    # run hooks after adding item to cart
-    $self->_run_hook('after_cart_add', $self, \%item, $ret);
-
-    return \%item;
-}
-
-=head2 remove $sku
-
-Remove item from the cart. Takes SKU of item to identify the item.
-
-=cut
-
-sub remove {
-    my ($self, $arg) = @_;
-    my ($pos, $found, $item);
-
-    $pos = 0;
-  
-    # run hooks before locating item
-    $self->_run_hook('before_cart_remove_validate', $self, $arg);
-
-    for $item (@{$self->{items}}) {
-	if ($item->{sku} eq $arg) {
-	    $found = 1;
-	    last;
-	}
-	$pos++;
-    }
-
-    if ($found) {
-	# run hooks before adding item to cart
-	$item = $self->{items}->[$pos];
-
-	$self->_run_hook('before_cart_remove', $self, $item);
-
-	if (exists $item->{error}) {
-	    # one of the hooks denied removing the item
-	    $self->{error} = $item->{error};
-	    return;
-	}
-
-	# clear cache flags
-	$self->{cache_subtotal} = $self->{cache_total} = 0;
-
-	# removing item from our array
-	splice(@{$self->{items}}, $pos, 1);
-
-    $self->{last_modified} = DateTime->now;
-
-	$self->_run_hook('after_cart_remove', $self, $item);
-	return 1;
-    }
-
-    # item missing
-    $self->{error} = "Missing item $arg.";
-
-    return;
-}
-
-=head2 update
-
-Update quantity of items in the cart.
-
-Parameters are pairs of SKUs and quantities, e.g.
-
-    $cart->update(9780977920174 => 5,
-                  9780596004927 => 3);
-
-Triggers before_cart_update and after_cart_update hooks.
-
-A quantity of zero is equivalent to removing this item,
-so in this case the remove hooks will be invoked instead 
-of the update hooks.
-
-=cut
-
-sub update {
-    my ($self, @args) = @_;
-    my ($ref, $sku, $qty, $item, $new_item);
-
-    while (@args > 0) {
-	$sku = shift @args;
-	$qty = shift @args;
-
-	unless ($item = $self->find($sku)) {
-	    die "Item for $sku not found in cart.\n";
-	}
-
-	if ($qty == 0) {
-	    # remove item instead
-            $self->remove($sku);
-	    next;
-	}
-
-	# jump to next item if quantity stays the same
-	next if $qty == $item->{quantity};
-
-	# run hook before updating the cart
-	$new_item = {quantity => $qty};
-
-	$self->_run_hook('before_cart_update', $self, $item, $new_item);
-
-	if (exists $new_item->{error}) {
-	    # one of the hooks denied the item
-	    $self->{error} = $new_item->{error};
-	    return;
-	}
-
-    $self->{last_modified} = DateTime->now;
-
-	$self->_run_hook('after_cart_update', $self, $item, $new_item);
-
-	$item->{quantity} = $qty;
-    }
-}
-
-=head2 clear
-
-Removes all items from the cart.
-
-=cut
-
-sub clear {
-    my ($self) = @_;
+    $self->clear_error;
 
     # run hook before clearing the cart
-    $self->_run_hook('before_cart_clear', $self);
-    
-    $self->{items} = [];
+    $self->execute_hook( 'before_cart_clear', $self );
+    return if $self->has_error;
+
+    # fire off the clear
+    $orig->( $self, @_ );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
 
     # run hook after clearing the cart
-    $self->_run_hook('after_cart_clear', $self);
-
-    # reset subtotal/total
-    $self->{subtotal} = 0;
-    $self->{total} = 0;
-    $self->{cache_subtotal} = 1;
-    $self->{cache_total} = 1;
-
-    $self->{last_modified} = DateTime->now;
+    $self->execute_hook( 'after_cart_clear', $self );
 
     return;
-}
+};
 
-=head2 find
+around set_name => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my $ret;
 
-Searches for an cart item with the given SKU.
-Returns cart item in case of sucess.
+    $self->clear_error;
 
-    if ($item = $cart->find(9780977920174)) {
-        print "Quantity: $item->{quantity}.\n";
+    my $old_name = $self->get_name;
+
+    # run hook before clearing the cart
+    $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
+    return if $self->has_error;
+
+    # fire off the rename
+    $orig->( $self, @_ );
+
+    $self->_set_last_modified( DateTime->now );
+
+    # run hook after clearing the cart
+    $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
+
+    return $self->get_name;
+};
+
+# public methods
+
+sub add {
+    my $self    = shift;
+    my $product = $_[0];
+    my ( $index, $oldproduct, $update );
+
+    $self->clear_error;
+
+    unless ( blessed($product) && $product->isa('Interchange6::Cart::Product') )
+    {
+
+        # we got a hash(ref) rather than an Product
+
+        my %args;
+
+        if ( is_HashRef($product) ) {
+
+            # copy args
+            %args = %{$product};
+        }
+        else {
+
+            %args = @_;
+        }
+
+        # run hooks before validating product
+
+        $self->execute_hook( 'before_cart_add_validate', $self, \%args );
+        return if $self->has_error;
+
+        $product = 'Interchange6::Cart::Product'->new(%args);
+
+        unless ( blessed($product)
+            && $product->isa('Interchange6::Cart::Product') )
+        {
+            $self->set_error("failed to create product.");
+            return;
+        }
     }
 
-=cut
+    # $product is now an Interchange6::Cart::Product so run hook
+
+    $self->execute_hook( 'before_cart_add', $self, $product );
+    return if $self->has_error;
+
+   # cart may already contain an product with the same sku
+   # if so then we add quantity to existing product otherwise we add new product
+
+    $index = $self->product_index( sub { $_->sku eq $product->sku } );
+
+    if ( $index >= 0 ) {
+
+        # product already exists in cart so we need to add new quantity to old
+
+        $oldproduct = $self->product_get($index);
+
+        $product->quantity( $oldproduct->quantity + $product->quantity );
+
+        $self->_product_set( $index, $product );
+
+        $update = 1;
+    }
+    else {
+
+        # a new product for this cart
+
+        $self->_product_push($product);
+    }
+
+    # final hook
+    $self->execute_hook( 'after_cart_add', $self, $product, $update );
+
+    $self->clear_subtotal;
+    $self->clear_total;
+    $self->_set_last_modified( DateTime->now );
+
+    return $product;
+}
+
+sub apply_cost {
+    my ( $self, %args ) = @_;
+
+    $self->_cost_push( \%args );
+
+    # clear cache for total if this is not an inclusive cost
+    $self->clear_total unless $args{inclusive};
+}
+
+sub cost {
+    my ( $self, $loc ) = @_;
+    my ( $cost, $ret );
+
+    if ( defined $loc ) {
+        if ( $loc =~ /^\d+$/ ) {
+
+            # cost by position
+            $cost = $self->cost_get($loc);
+        }
+        elsif ( $loc =~ /\S/ ) {
+
+            # cost by name
+            for my $c ( $self->get_costs ) {
+                if ( $c->{name} eq $loc ) {
+                    $cost = $c;
+                }
+            }
+        }
+    }
+
+    if ( defined $cost ) {
+        $ret = $self->_calculate( $self->subtotal, $cost, 1 );
+    }
+
+    return $ret;
+}
 
 sub find {
-    my ($self, $sku) = @_;
+    my ( $self, $sku ) = @_;
 
-    for my $cartitem (@{$self->{items}}) {
-	if ($sku eq $cartitem->{sku}) {
-	    return $cartitem;
+    for my $cartproduct ( $self->products_array ) {
+        if ( $sku eq $cartproduct->sku ) {
+            return $cartproduct;
         }
     }
 
     return;
 }
-
-=head2 quantity
-
-Returns the sum of the quantity of all items in the shopping cart,
-which is commonly used as number of items. If you have 5 apples and 6 pears it will return 11.
-
-    print 'Items in your cart: ', $cart->quantity, "\n";
-
-=cut
 
 sub quantity {
     my $self = shift;
-    my $qty = 0;
+    my $qty  = 0;
 
-    for my $item (@{$self->{items}}) {
-	$qty += $item->{quantity};
+    for my $product ( $self->products_array ) {
+        $qty += $product->quantity;
     }
 
     return $qty;
 }
 
-=head2 created
+sub remove {
+    my ( $self, $arg ) = @_;
+    my ( $index, $product );
 
-Returns the time (DateTime) when the cart was created.
+    $self->clear_error unless caller eq __PACKAGE__;
 
-=cut
+    # run hook before locating product
+    $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
+    return if $self->has_error;
 
-sub created {
-    my ($self) = @_;
+    $index = $self->product_index( sub { $_->sku eq $arg } );
 
-    return $self->{created};
-}
+    if ( $index >= 0 ) {
 
-=head2 last_modified
+        # run hooks before adding product to cart
+        $product = $self->product_get($index);
 
-Returns the time (DateTime) when the cart was last modified.
+        $self->execute_hook( 'before_cart_remove', $self, $product );
+        return if $self->has_error;
 
-=cut
+        # remove product from our array
+        $self->_delete($index);
 
-sub last_modified {
-    my ($self) = @_;
+        # reset totals & modified before calling hook
+        $self->clear_subtotal;
+        $self->clear_total;
+        $self->_set_last_modified( DateTime->now );
 
-    return $self->{last_modified};
-}
+        $self->execute_hook( 'after_cart_remove', $self, $product );
+        return if $self->has_error;
 
-=head2 users_id
-
-Returns the id of the user if user is logged in.
-
-=cut
-
-sub users_id {
-    my ($self, $users_id) = @_;
-
-    if (@_ > 1) {
-        # set users_id for the cart
-        my %data = (users_id => $users_id);
-
-        $self->_run_hook('before_cart_set_users_id', $self, \%data);
-
-        $self->{users_id} = $users_id;
-
-        $self->_run_hook('after_cart_set_users_id', $self, \%data);
+        return 1;
     }
 
-    return $self->{users_id};
+    # product missing
+    $self->set_error("Product not found in cart: $arg.");
+    return;
 }
 
-=head2 sessions_id
+# seed needs to add products directly and must not use $cart->add in order
+# to avoid hooks
+sub seed {
+    my ( $self, $product_ref ) = @_;
+    my ( $args, $product, @errors );
 
-=cut
+  PRODUCT: for $args ( @{ $product_ref || [] } ) {
+
+        # stash any existing error
+        push( @errors, $self->error ) if $self->has_error;
+
+        $product = Interchange6::Cart::Product->new($args);
+        unless ( blessed($product)
+            && $product->isa('Interchange6::Cart::Product') )
+        {
+            $self->set_error("failed to create product.");
+            next PRODUCT;
+        }
+
+        $self->_product_push($product);
+    }
+    push( @errors, $self->error ) if $self->has_error;
+    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+
+    return $self->products;
+}
 
 sub sessions_id {
-    my ($self, $sessions_id) = @_;
+    my ( $self, $sessions_id ) = @_;
 
-    if (@_ > 1) {
+    if ( @_ > 1 ) {
+
         # set sessions_id for the cart
-        my %data = (sessions_id => $sessions_id);
+        my %data = ( sessions_id => $sessions_id );
 
-        $self->_run_hook('before_cart_set_sessions_id', $self, \%data);
+        $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
+        return if $self->has_error;
 
-        $self->{sessions_id} = $sessions_id;
+        if ( defined $sessions_id ) {
+            $self->_set_sessions_id($sessions_id);
+        }
+        else {
+            # magic undef used on logout to prevent cart contents from
+            # beging deleted on session->destroy
+            $self->clear_sessions_id;
+        }
 
-        $self->_run_hook('after_cart_set_sessions_id', $self, \%data);
+        $self->execute_hook( 'after_cart_set_sessions_id', $self, \%data );
     }
 
-    return $self->{sessions_id};
+    return $self->get_sessions_id;
 }
 
-=head2 count
+sub update {
+    my ( $self, @args ) = @_;
+    my ( $sku, $qty, $product, $update, @errors );
 
-Returns the number of different items in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different items).
+    $self->clear_error;
 
-=cut
+  ARGS: while ( @args > 0 ) {
+        $sku = shift @args;
+        $qty = shift @args;
 
-sub count {
+        # stash any existing error
+        push( @errors, $self->error ) if $self->has_error;
+
+        unless ( $product = $self->find($sku) ) {
+            $self->set_error("Product for $sku not found in cart.");
+            next ARGS;
+        }
+
+        if ( $qty == 0 ) {
+
+            $self->remove($sku);
+            next;
+        }
+
+        # jump to next product if quantity stays the same
+        next if $qty == $product->quantity;
+
+        # run hook before updating the cart
+        $update = { quantity => $qty };
+
+        $self->execute_hook( 'before_cart_update', $self, $product, $update );
+        next ARGS if $self->has_error;
+
+        $product->quantity($qty);
+
+        $self->clear_subtotal;
+        $self->clear_total;
+        $self->_set_last_modified( DateTime->now );
+
+        $self->execute_hook( 'after_cart_update', $self, $product, $update );
+    }
+    push( @errors, $self->error ) if $self->has_error;
+    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+}
+
+sub users_id {
+    my ( $self, $users_id ) = @_;
+
+    if ( @_ > 1 ) {
+
+        # set users_id for the cart
+        my %data = ( users_id => $users_id );
+
+        $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
+        return if $self->has_error;
+
+        $self->_set_users_id($users_id);
+
+        $self->execute_hook( 'after_cart_set_users_id', $self, \%data );
+    }
+
+    return $self->get_users_id;
+}
+
+# private methods
+
+sub _calculate {
+    my ( $self, $subtotal, $costs, $display ) = @_;
+    my ( $cost_ref, $sum );
+
+    if ( ref $costs eq 'HASH' ) {
+        $cost_ref = [$costs];
+    }
+    elsif ( ref $costs eq 'ARRAY' ) {
+        $cost_ref = $costs;
+    }
+    else {
+        $cost_ref = $self->costs;
+    }
+
+    $sum = 0;
+
+    for my $calc (@$cost_ref) {
+        if ( $calc->{inclusive} && !$display ) {
+            next;
+        }
+
+        if ( $calc->{relative} ) {
+            $sum += $subtotal * $calc->{amount};
+        }
+        else {
+            $sum += $calc->{amount};
+        }
+    }
+
+    return $sum;
+}
+
+# compatibility methods
+
+sub products {
     my $self = shift;
-
-    return scalar(@{$self->{items}});
+    return $self->get_products;
 }
 
-=head2 apply_cost 
+sub name {
+    my $self = shift;
+    if ( @_ > 0 ) {
+        $self->set_name( $_[0] );
+    }
+    return $self->get_name;
+}
+
+1;
+
+=head1 NAME 
+
+Interchange6::Cart - Cart class for Interchange6 Shop Machine
+
+=head1 SYNOPSIS
+
+  my $cart = Interchange6::Cart->new();
+
+  $cart->add( sku => 'ABC', name => 'Foo', price => 23.45 );
+
+  $cart->update( sku => 'ABC', quantity => 3 );
+
+  my $product = Interchange::Cart::Product->new( ... );
+
+  $cart->add($product);
+
+  $cart->apply_cost( ... );
+
+  my $total = $cart->total;
+
+=head1 DESCRIPTION
+
+Generic cart class for L<Interchange6>.
+
+=head1 METHODS
+
+=head2 new
+
+Returns a new Cart object.
+
+=head2 add($product)
+
+Add product to the cart. Returns product in case of success.
+
+The product is an L<Interchange6::Cart::Product> or a hash (reference) of product attributes that would be passed to Interchange6::Cart::Product->new(). See L<Interchange6::Cart::Product> for details.
+
+=head2 add_hook( $hook );
+
+This binds a coderef to an installed hook.
+
+  $hook = Interchange6::Hook->new(
+      name => 'before_cart_remove',
+      code => sub {
+          my ( $cart, $product ) = @_;
+          if ( $product->sku eq '123' ) {
+              $cart->set_error('Product not removed due to hook.');
+          }
+      }
+  )
+
+  $cart->add_hook( $hook );
+
+See L</HOOKS> for details of the available hooks.
+
+=head2 apply_cost
 
 Apply cost to cart. apply_cost is a generic method typicaly used for taxes, discounts, coupons, gift certificates,...
 
 B<Example:> Absolute cost
 
-	Uses absolute value for amount. Amount 5 is 5 units of currency used (ie. $5).
+    Uses absolute value for amount. Amount 5 is 5 units of currency used (ie. $5).
 
-	$cart->apply_cost(amount => 5, name => 'shipping', label => 'Shipping');
+    $cart->apply_cost(amount => 5, name => 'shipping', label => 'Shipping');
 
 B<Example:> Relative cost
 
-	Uses percentage instead of value for amount. Amount 0.19 in example is 19%.
+    Uses percentage instead of value for amount. Amount 0.19 in example is 19%.
 
-	relative is a boolean value (0/1).
+    relative is a boolean value (0/1).
 
-	$cart->apply_cost(amount => 0.19, name => 'tax', label => 'VAT', relative => 1);
+    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'VAT', relative => 1);
 
 B<Example:> Inclusive cost
 
-	Same as relative cost, but it assumes that tax was included in the subtotal already, and only displays it (19% of subtotal value in example). Inclusive is a boolean value (0/1).
+    Same as relative cost, but it assumes that tax was included in the subtotal already, and only displays it (19% of subtotal value in example). Inclusive is a boolean value (0/1).
 
-	$cart->apply_cost(amount => 0.19, name => 'tax', label => 'Sales Tax', relative => 1, inclusive => 1);
+    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'Sales Tax', relative => 1, inclusive => 1);
 
 =cut
 
-sub apply_cost {
-    my ($self, %args) = @_;
+=head2 clear
 
-    push @{$self->{costs}}, \%args;
-
-    unless ($args{inclusive}) {
-	# clear cache for total
-	$self->{cache_total} = 0;
-    }
-}
+Removes all products from the cart.
 
 =head2 clear_cost
 
-It removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
-
-=cut
-
-sub clear_cost {
-    my $self = shift;
-
-    $self->{costs} = [];
-
-    $self->{cache_total} = 0;
-}
+Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
 
 =head2 cost
 
 Returns particular cost by position or by name.
 
 B<Example:> Return tax value by name
-	
-	$cart->cost('tax'); 
 
-	Returns value of the tax (absolute value in your currency, not percantage)
+  $cart->cost('tax');
+
+Returns value of the tax (absolute value in your currency, not percentage)
 
 B<Example:> Return tax value by position
 
-	$cart->cost(0); 
+  $cart->cost(0);
 
-	Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
+Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
 
-=cut
+=head2 costs
 
-sub cost {
-    my ($self, $loc) = @_;
-    my ($cost, $ret);
+Returns an array of all costs associated with the cart. Costs are ordered according to the order they were applied.
 
-    if (defined $loc) {
-	if ($loc =~ /^\d+/) {
-	    # cost by position
-	    $cost = $self->{costs}->[$loc];
-	}
-	elsif ($loc =~ /\S/) {
-	    # cost by name
-	    for my $c (@{$self->{costs}}) {
-		if ($c->{name} eq $loc) {
-		    $cost = $c;
-		}
-	    }
-	}
-    }
+=head2 count
 
-    if (defined $cost) {
-	$ret = $self->_calculate($self->{subtotal}, $cost, 1);
-    }
+Returns the number of different products in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different products).
 
-    return $ret;
-}
+=head2 created
 
-=head2 id
-
-Get or set id of the cart. This can be used for subclasses, 
-e.g. primary key value for carts in the database.
-
-=cut
-
-sub id {
-    my $self = shift;
-
-    if (@_ > 0) {
-	$self->{id} = $_[0];
-    }
-
-    return $self->{id};
-}
-
-=head2 name
-
-Get or set the name of the cart.
-
-=cut
-
-sub name {
-    my $self = shift;
-
-    if (@_ > 0) {
-	my $old_name = $self->{name};
-
-	$self->_run_hook('before_cart_rename', $self, $old_name, $_[0]);
-
-	$self->{name} = $_[0];
-    $self->{last_modified} = DateTime->now;
-
-	$self->_run_hook('after_cart_rename', $self, $old_name, $_[0]);
-    }
-
-    return $self->{name};
-}
+Returns the time the cart was created as a DateTime object.
 
 =head2 error
 
-Returns last error.
+Returns the last error.
 
-=cut
+=head2 find
 
-sub error {
-    my $self = shift;
+Searches for an cart product with the given SKU.
+Returns cart product in case of sucess.
 
-    return $self->{error};
-}
+  if ($product = $cart->find(9780977920174)) {
+      print "Quantity: $product->{quantity}.\n";
+  }
 
-=head2 seed $item_ref
+=head2 get_name
 
-Seeds items within the cart from $item_ref.
+Returns cart name
 
-B<Example:>
+=head2 get_products
 
-	$cart->seed([
-		{ sku => 'BMX2015', price => 20, quantity = 1 },
-		{ sku => 'KTM2018', price => 400, quantity = 5 },
-		{ sku => 'DBF2020', price => 200, quantity = 5 },
-	]);
+Returns an arrayref of Interchange::Cart::Product(s)
 
-=cut
+=head2 get_sessions_id
 
-sub seed {
-    my ($self, $item_ref) = @_;
+=head2 get_users_id
 
-    @{$self->{items}} = @{$item_ref || []};
+=head2 is_empty
 
-    # clear cache flags
-    $self->{cache_subtotal} = $self->{cache_total} = 0;
+Return boolean 1 or 0 depending on whether the cart is empty or not.
 
-    $self->{last_modified} = DateTime->now;
+=head2 product_get $index
 
-    return $self->{items};
-}
+Returns the product at the specified index;
 
-sub _combine {
-    my ($self, $item) = @_;
+=head2 product_index( sub {...})
 
-    ITEMS: for my $cartitem (@{$self->{items}}) {
-	if ($item->{sku} eq $cartitem->{sku}) {
-	    for my $mod (@{$self->{modifiers}}) {
-		next ITEMS unless($item->{$mod} eq $cartitem->{$mod});
-	    }					
-	    			
-	    $cartitem->{'quantity'} += $item->{'quantity'};
-	    $item->{'quantity'} = $cartitem->{'quantity'};
+This method returns the index of the first matching product in the cart. The matching is done with a subroutine reference you pass to this method. The subroutine will be called against each element in the array until one matches or all elements have been checked.
 
-	    return 1;
-	}
-    }
+This method requires a single argument.
 
-    return 0;
-}
+  my $index = $cart->product_index( sub { $_->sku eq 'ABC' } );
 
-sub _calculate {
-    my ($self, $subtotal, $costs, $display) = @_;
-    my ($cost_ref, $sum);
+=head2 products
 
-    if (ref $costs eq 'HASH') {
-	$cost_ref = [$costs];
-    }
-    elsif (ref $costs eq 'ARRAY') {
-	$cost_ref = $costs;
-    }
-    else {
-	$cost_ref = $self->{costs};
-    }
+An alias for get_products for backwards compatibility.
 
-    $sum = 0;
+=head2 products_array
 
-    for my $calc (@$cost_ref) {
-	if ($calc->{inclusive} && ! $display) {
-	    next;
-	}
+Returns an array of Interchange::Cart::Product(s)
 
-	if ($calc->{relative}) {
-	    $sum += $subtotal * $calc->{amount};
-        }
-	else {
-	    $sum += $calc->{amount};
-	}
-    }
+=head2 last_modified
 
-    return $sum;
-}
+Returns the time the cart was last modified as a DateTime object.
 
-sub _run_hook {
-    my ($self, $name, @args) = @_;
-    my $ret;
+=head2 name
 
-    if ($self->{run_hooks}) {
-	$ret = $self->{run_hooks}->($name, @args);
-    }
+An alias for get_name and set_name for backwards compatibility.
 
-    return $ret;
-}
+  $cart->name
 
-=head1 AUTHOR
+Returns current name of cart (default is 'main').
+
+  $cart->name('newname')
+
+Set new name of cart.
+
+=head2 quantity
+
+Returns the sum of the quantity of all products in the shopping cart,
+which is commonly used as number of products. If you have 5 apples and 6 pears it will return 11.
+
+  print 'Products in your cart: ', $cart->quantity, "\n";
+
+=head2 remove($sku)
+
+Remove product from the cart. Takes SKU of product to identify the product.
+
+=head2 seed $product_ref
+
+Seeds products within the cart from $product_ref.
+
+B<NOTE:> use with caution since any existing products in the cart will be lost. This method primarily exists for testing purposes only.
+
+  $cart->seed([
+      { sku => 'BMX2015', price => 20, quantity = 1 },
+      { sku => 'KTM2018', price => 400, quantity = 5 },
+      { sku => 'DBF2020', price => 200, quantity = 5 },
+  ]);
+
+=head2 sessions_id
+
+=head2 subtotal
+
+Returns current cart subtotal excluding costs.
+
+=head2 total
+
+Returns current cart total including costs.
+
+=head2 update
+
+Update quantity of products in the cart.
+
+Parameters are pairs of SKUs and quantities, e.g.
+
+  $cart->update(9780977920174 => 5,
+                9780596004927 => 3);
+
+Triggers before_cart_update and after_cart_update hooks.
+
+A quantity of zero is equivalent to removing this product,
+so in this case the remove hooks will be invoked instead
+of the update hooks.
+
+=head2 users_id
+
+Returns the id of the user if user is logged in.
+
+=head1 HOOKS
+
+The following hooks are available:
+
+=over 4
+
+=item before_cart_add_validate
+
+Called in L</add> for items added as hash(ref)s. Not called for products passed into L</add> that are already L<Interchange6::Cart::Product> objects.
+
+Receives: $cart, \%args
+
+=item before_cart_add
+
+Called in L</add> immediately before the Interchange6::Cart::Product is added to the cart.
+
+Receives: $cart, $product
+
+=item after_cart_add
+
+Called in L</add> after product has been added to the cart.
+
+Receives: $cart, $product
+
+=item before_cart_remove_validate
+
+Called at start of L</remove> before arg has been validated.
+
+Receives: $cart, $sku
+
+=item before_cart_remove
+
+Called in L</remove> before product is removed from cart.
+
+Receives: $cart, $product
+
+=item after_cart_remove
+
+Called in L</remove> after product has been removed from cart.
+
+Receives: $cart, $product
+
+=item before_cart_update
+
+=item after_cart_update
+
+=item before_cart_clear
+
+=item after_cart_clear
+
+=item before_cart_set_users_id
+
+=item after_cart_set_users_id
+
+=item before_cart_set_sessions_id
+
+=item after_cart_set_sessions_id
+
+=item before_cart_rename
+
+=item after_cart_rename
+
+=back
+
+=head1 AUTHORS
 
 Stefan Hornburg (Racke), <racke@linuxia.de>
+Peter Mottram (SysPete), <peter@sysnix.com>
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -784,7 +874,3 @@ under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
-
-=cut
-
-1;
