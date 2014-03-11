@@ -47,7 +47,7 @@ Modifications for Interchange6 by Peter Mottram, peter@sysnix.com
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Alexis Sukrieh.
+This software is copyright (c) 2013-2014 by Alexis Sukrieh.
 Interchange modifications are copyright (c) 2014 by Peter Mottram.
  
 This is free software; you can redistribute it and/or modify it under

@@ -867,7 +867,7 @@ Peter Mottram (SysPete), <peter@sysnix.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2011-2013 Stefan Hornburg (Racke) <racke@linuxia.de>.
+Copyright 2011-2014 Stefan Hornburg (Racke) <racke@linuxia.de>.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
