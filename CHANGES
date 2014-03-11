@@ -1,5 +1,12 @@
 Revision history for Interchange6
 
+0.004 Tue Mar 11 18:36:30 2014 CET
+
+    [ENHANCEMENTS]
+
+    * Moo cart rewrite (Peter Mottram).
+    * Use DateTime for created and last_modified (Peter Mottram, GH #2)
+
 0.003 Thu Jan  2 12:09:12 2014 CET
 
     [ENHANCEMENTS]
