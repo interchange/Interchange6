@@ -1,5 +1,15 @@
 Revision history for Interchange6
 
+0.010 Wed Mar 12 16:22:43 2014 CET
+
+    [ENHANCEMENTS]
+
+    * Remove Interchange6::Class (Peter Mottram, GH #8).
+
+    [BUG FIXES]
+
+    * Add Test::Most to build prerequisites.
+
 0.004 Tue Mar 11 18:36:30 2014 CET
 
     [ENHANCEMENTS]
