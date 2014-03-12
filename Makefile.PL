@@ -13,6 +13,7 @@ WriteMakefile(
     PL_FILES            => {},
     BUILD_REQUIRES => {
         'Test::More' => 0,
+        'Test::Most' => 0,
         'Test::Warnings' => 0,
     },
     PREREQ_PM => {
