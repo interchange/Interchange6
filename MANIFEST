@@ -2,7 +2,6 @@ CHANGES
 lib/Interchange6.pm
 lib/Interchange6/Cart.pm
 lib/Interchange6/Cart/Product.pm
-lib/Interchange6/Class.pm
 lib/Interchange6/Hook.pm
 lib/Interchange6/Role/Errors.pm
 lib/Interchange6/Role/Hookable.pm
