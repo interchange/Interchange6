@@ -1,5 +1,11 @@
 Revision history for Interchange6
 
+0.011 Thu Mar 13 03:02:13 2014 CET
+
+    [ENHANCEMENTS]
+
+    * Add subtotal method to Cart::Product class.
+
 0.010 Wed Mar 12 16:22:43 2014 CET
 
     [ENHANCEMENTS]
