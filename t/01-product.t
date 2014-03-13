@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 40;
 use Test::Warnings qw/warning :no_end_test/;
 use Test::Exception;
 
@@ -31,6 +31,8 @@ isa_ok( $product, 'Interchange6::Cart::Product' );
 
 is( $product->quantity, 1, "default quantity is 1" );
 
+ok( $product->subtotal == 42, "subtotal for quantity 1 is 42" );
+
 # a larger quantity
 
 $args->{quantity} = 4;
@@ -41,6 +43,8 @@ lives_ok { $product = Interchange6::Cart::Product->new($args) }
 isa_ok( $product, 'Interchange6::Cart::Product' );
 
 is( $product->quantity, 4, "quantity is 4" );
+
+ok( $product->subtotal == 168, "subtotal for quantity 4 is 42" );
 
 # undef sku
 
