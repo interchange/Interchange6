@@ -16,7 +16,7 @@ use Interchange6::Hook;
 
 my ( $args, $cart, $product, $ret, $modified, $hook );
 
-# create a DateTime oject for later comparison
+# create a DateTime object for later comparison
 
 $modified = DateTime->now;
 
