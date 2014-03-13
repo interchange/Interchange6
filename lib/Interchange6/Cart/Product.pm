@@ -86,6 +86,19 @@ has uri => (
 
 =back
 
+=head1 METHODS
+
+=head2 subtotal
+
+Returns subtotal for this cart product.
+The subtotal is calculated by the multiplication of price and quantity.
+
 =cut
+
+sub subtotal {
+    my ($self) = @_;
+
+    return $self->price * $self->quantity;
+};
 
 1;
