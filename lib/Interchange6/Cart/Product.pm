@@ -22,6 +22,17 @@ Each cart product has the following attributes:
 
 =over 4
 
+=item cart_products_id
+
+Can be used by subclasses to tie cart products to L<Interchange6::Schema::Result::CartProduct>.
+
+=cut
+
+has cart_products_id => (
+    is => 'ro',
+    isa => Int,
+);
+
 =item sku
 
 Unique product identifier is required.
