@@ -1,5 +1,12 @@
 Revision history for Interchange6
 
+0.030 Fri Apr  4 19:40:19 2014 CEST
+
+    [ENHANCEMENTS]
+
+    * Add cart_products_id attribute to Cart::Product
+      (Peter Mottram, GH #10).
+
 0.011 Thu Mar 13 03:02:13 2014 CET
 
     [ENHANCEMENTS]
