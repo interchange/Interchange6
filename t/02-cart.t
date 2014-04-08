@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper;
 use DateTime;
 
-use Test::Most tests => 111;
+use Test::Most tests => 118;
 use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
@@ -19,8 +19,6 @@ my ( $args, $cart, $product, $ret, $modified, $hook );
 # create a DateTime object for later comparison
 
 $modified = DateTime->now;
-
-#die_on_fail;
 
 # create a cart and change its name
 
@@ -59,6 +57,11 @@ lives_ok { $product = Interchange6::Cart::Product->new($args) }
 
 cmp_ok( $cart->subtotal, '==', 0, "Check subtotal" );
 cmp_ok( $cart->total,    '==', 0, "Check total" );
+
+throws_ok( sub { $cart->add(Interchange6::Cart->new) },
+   qr/product argument is not an Interchange6::Cart::Product/,
+   "Fail to add Cart to Cart"
+);
 
 lives_ok { $cart->add($product) } "add product to cart";
 
@@ -244,6 +247,32 @@ lives_ok { $cart->remove('123') } "Remove product";
 
 cmp_ok( $cart->is_empty, '==', 1, "cart is empty" );
 
+# before_cart_add_validate hook
+
+lives_ok( sub {
+    $hook = Interchange6::Hook->new(
+        name => 'before_cart_add_validate',
+        code => sub {
+            my $cart = shift;
+            $cart->set_error('general error');
+        }
+    );
+},
+"Create before_cart_add_validate hook");
+
+lives_ok( sub { $cart->add_hook($hook) }, "Add the hook to the cart" );
+
+$product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
+lives_ok ( sub { $cart->add($product) }, "Hooked");
+
+cmp_ok( $cart->has_error, '==', 1, "We have an error" );
+
+cmp_ok( $cart->error, 'eq', 'general error', "Error is: " . $cart->error );
+
+lives_ok( sub { $cart->replace_hook('before_cart_add_validate', undef ) },
+    "remove hook"
+);
+
 # before_cart_add hook
 
 lives_ok {
@@ -262,7 +291,6 @@ lives_ok {
 lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
 $product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
-
 lives_ok { $cart->add($product) } "add product with price = 3";
 
 cmp_ok( $cart->has_error, '==', 0, "No error" );

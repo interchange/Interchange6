@@ -225,8 +225,11 @@ sub add {
 
     $self->clear_error;
 
-    unless ( blessed($product) && $product->isa('Interchange6::Cart::Product') )
-    {
+    if ( blessed($product) ) {
+        die "product argument is not an Interchange6::Cart::Product"
+          unless ( $product->isa('Interchange6::Cart::Product') );
+    }
+    else {
 
         # we got a hash(ref) rather than an Product
 
@@ -325,9 +328,15 @@ sub cost {
             }
         }
     }
+    else {
+        die "Either position or name required as argument to cost";
+    }
 
     if ( defined $cost ) {
         $ret = $self->_calculate( $self->subtotal, $cost, 1 );
+    }
+    else {
+        die "Bad argument to cost: " . $loc;
     }
 
     return $ret;

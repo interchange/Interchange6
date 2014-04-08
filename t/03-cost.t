@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::Most tests => 14;
 
 use Interchange6::Cart;
 
@@ -18,6 +18,18 @@ $cart->apply_cost( amount => 5, name => 'fee' );
 
 $ret = $cart->total;
 ok( $ret == 5, "Total: $ret" );
+
+throws_ok( sub { $cart->cost() }, qr/position or name required/,
+    "Fail calling cost with no arg"
+);
+
+throws_ok( sub { $cart->cost(' ') }, qr/Bad argument to cost:/,
+    "Fail calling cost with single space as arg"
+);
+
+throws_ok( sub { $cart->cost("I'm not there") }, qr/Bad argument to cost:/,
+    "Fail calling cost with bad cost name"
+);
 
 # get cost by position
 $ret = $cart->cost(0);
