@@ -5,8 +5,7 @@
 use strict;
 use warnings;
 
-#use Test::Most tests => 14;
-use Test::Most 'die';
+use Test::Most tests => 22;
 
 use Interchange6::Cart;
 
