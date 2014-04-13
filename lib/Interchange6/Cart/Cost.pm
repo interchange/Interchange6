@@ -60,7 +60,7 @@ Boolean defaults to 0. If true then L<amount> is relative to L<Cart subtotal|Int
 
 =cut
 
-sub relative => (
+has relative => (
     is      => 'ro',
     isa     => Bool,
     default => 0,
@@ -72,8 +72,8 @@ Boolean defaults to 0. If true signifies that the cost is already included in L<
 
 =cut
 
-sub inclusive => (
-    is      => ro,
+has inclusive => (
+    is      => 'ro',
     isa     => Bool,
     default => 0,
 );

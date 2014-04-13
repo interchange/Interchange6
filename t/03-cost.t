@@ -5,7 +5,8 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 14;
+#use Test::Most tests => 14;
+use Test::Most 'die';
 
 use Interchange6::Cart;
 
@@ -13,22 +14,56 @@ my ( $cart, $product, $ret );
 
 $cart = Interchange6::Cart->new;
 
+throws_ok(
+    sub { $cart->apply_cost() },
+    qr/undefined argument passed to apply_cost/,
+    "fail apply_cost with empty args"
+);
+
+throws_ok(
+    sub { $cart->apply_cost(undef) },
+    qr/undefined argument passed to apply_cost/,
+    "fail apply_cost with undef arg"
+);
+
+throws_ok(
+    sub { $cart->apply_cost( amount => 5 ) },
+    qr/Missing required arguments: name/,
+    "fail apply_cost with arg amount only"
+);
+
+throws_ok(
+    sub { $cart->apply_cost( name => 'fee' ) },
+    qr/Missing required arguments: amount/,
+    "fail apply_cost with arg amount only"
+);
+
 # fixed amount to empty cart
-$cart->apply_cost( amount => 5, name => 'fee' );
+lives_ok( sub { $cart->apply_cost( amount => 5, name => 'fee' ) },
+    "apply_cost 5 with name fee" );
 
-$ret = $cart->total;
-ok( $ret == 5, "Total: $ret" );
+cmp_ok( $cart->cost_count, '==', 1, "cost_count is 1" );
 
-throws_ok( sub { $cart->cost() }, qr/position or name required/,
-    "Fail calling cost with no arg"
+cmp_ok( $cart->costs->[0]->label, 'eq', 'fee', "cost label lazily set to fee" );
+
+cmp_ok( $cart->total, '==', 5, "cart total is 5" );
+
+throws_ok(
+    sub { $cart->cost() },
+    qr/position or name required/,
+    "fail calling cost with no arg"
 );
 
-throws_ok( sub { $cart->cost(' ') }, qr/Bad argument to cost:/,
-    "Fail calling cost with single space as arg"
+throws_ok(
+    sub { $cart->cost(' ') },
+    qr/Bad argument to cost:/,
+    "fail calling cost with single space as arg"
 );
 
-throws_ok( sub { $cart->cost("I'm not there") }, qr/Bad argument to cost:/,
-    "Fail calling cost with bad cost name"
+throws_ok(
+    sub { $cart->cost("I'm not there") },
+    qr/Bad argument to cost:/,
+    "fail calling cost with bad cost name"
 );
 
 # get cost by position
@@ -39,10 +74,10 @@ ok( $ret == 5, "Total: $ret" );
 $ret = $cart->cost('fee');
 ok( $ret == 5, "Total: $ret" );
 
-$cart->clear_cost();
+lives_ok( sub { $cart->clear_cost() }, "Clear costs" );
 
 # relative amount to empty cart
-$cart->apply_cost( amount => 0.5, relative => 1 );
+$cart->apply_cost( name => 'tax', amount => 0.5, relative => 1 );
 
 $ret = $cart->total;
 ok( $ret == 0, "Total: $ret" );
