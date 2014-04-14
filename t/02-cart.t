@@ -7,7 +7,8 @@ use warnings;
 use Data::Dumper;
 use DateTime;
 
-use Test::Most tests => 118;
+#use Test::Most tests => 118;
+use Test::Most 'die';
 use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
@@ -202,50 +203,101 @@ cmp_ok( $cart->quantity, '==', 8, "cart quantity is 8" );
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
-# before_cart_remove hook
+lives_ok ( sub {
+    $hook = Interchange6::Hook->new(
+        name => 'bad_hook',
+        code => sub {
+            my $cart = shift;
+        }
+    );
+},
+"Create bad_hook");
+
+throws_ok( sub { $cart->add_hook($hook) }, qr/add_hook failed/,
+    "fail to add bad_hook" );
+
+# before_cart_clear hook
+
+$product = { sku => 'DEF', name => 'Foobar', price => 5 };
+lives_ok { $cart->add($product) } "add product";
+
+cmp_ok( $cart->count, '==', 1, "1 product in cart" );
+
+lives_ok ( sub {
+    $hook = Interchange6::Hook->new(
+        name => 'before_cart_clear',
+        code => sub {
+            my $cart = shift;
+            $cart->set_error('some failure');
+        }
+    );
+},
+"Create before_cart_clear hook" );
+
+lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
+
+lives_ok( sub { $cart->clear }, "cart clear" );
+
+cmp_ok( $cart->count, '==', 1, "still 1 product in cart" );
+
+ok($cart->has_error, "Cart has an error");
+
+lives_ok( sub { $cart->replace_hook('before_cart_clear', undef ) },
+    "remove hook"
+);
+
+lives_ok( sub { $cart->clear }, "cart clear" );
+
+cmp_ok( $cart->count, '==', 0, "0 products in cart" );
+
+is($cart->has_error, 0, "Cart has no errors");
+
+# before_cart_rename hook
+
+cmp_ok($cart->name, 'eq', 'main', "cart name is main");
 
 lives_ok {
     $hook = Interchange6::Hook->new(
-        name => 'before_cart_remove',
+        name => 'before_cart_rename',
         code => sub {
-            my ( $cart, $product ) = @_;
-            if ( $product->sku eq '123' ) {
-                $cart->set_error('Product not removed due to hook.');
+            my ($cart, $old_name, $new_name) = @_;
+            if ( $new_name eq 'not_allowed' ) {
+                $cart->set_error('Cart rename failed due to hook');
             }
         }
     );
 }
-"Create before_cart_remove hook for sku eq 123";
+"Create before_cart_rename hook for name eq not_allowed";
 
 lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-$product = { sku => 'DEF', name => 'Foobar', price => 5 };
-lives_ok { $cart->add($product) } "add 1st product";
+lives_ok { $cart->name("bananas") } "Change cart name to bananas";
 
-$product = { sku => '123', name => 'Foobar', price => 5 };
-lives_ok { $cart->add($product) } "add 2nd product";
+cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
 
-cmp_ok( $cart->count, '==', 2, "2 products in cart" );
+cmp_ok( $cart->has_errors, '==', 0, "no errors" );
 
-ok( !$cart->remove('123'), "attempt to remove product fails due to hook." );
+lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
 
-like(
-    $cart->error,
-    qr/Product not removed due to hook/,
-    "Error: " . $cart->error
+cmp_ok($cart->get_name, 'eq', 'bananas', "cart name is bananas");
+
+cmp_ok( $cart->has_errors, '==', 1, "cart has errors" );
+
+cmp_ok($cart->error, 'eq','Cart rename failed due to hook', "error looks good");
+
+lives_ok( sub { $cart->replace_hook('before_cart_rename', undef ) },
+    "remove hook"
 );
 
-cmp_ok( $cart->count, '==', 2, "2 products in cart" );
+lives_ok { $cart->set_name("not_allowed") } "Change cart name to not_allowed";
 
-ok( $cart->remove('DEF'), "remove other product from cart." );
+cmp_ok($cart->name, 'eq', 'not_allowed', "cart name is not_allowed");
 
-cmp_ok( $cart->count, '==', 1, "1 product in cart" );
+cmp_ok( $cart->has_errors, '==', 0, "no errors" );
 
-lives_ok { $cart->replace_hook( 'before_cart_remove', [] ) } "Remove hook";
+lives_ok { $cart->set_name("main") } "Change cart name to main";
 
-lives_ok { $cart->remove('123') } "Remove product";
-
-cmp_ok( $cart->is_empty, '==', 1, "cart is empty" );
+cmp_ok($cart->name, 'eq', 'main', "cart name is main");
 
 # before_cart_add_validate hook
 
@@ -442,3 +494,5 @@ ok(
 "Testing after_set_sessions_id hook with 513457188818705086798161933370395265.\n",
     "Test warning from after_set_sessions_id hook."
 ) || diag "Warning: $warns->[1].";
+
+done_testing;

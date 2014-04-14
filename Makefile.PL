@@ -12,13 +12,13 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     BUILD_REQUIRES => {
-        'MooseX::CoverableModifiers' => 0.30,
         'Test::More' => 0,
         'Test::Most' => 0,
         'Test::Warnings' => 0,
     },
     PREREQ_PM => {
         'Moo' => 0,
+        'MooseX::CoverableModifiers' => 0.30,
         'MooX::HandlesVia' => 0,
         'DateTime' => 0,
 	    'Interchange6::Schema'     => 0.030,

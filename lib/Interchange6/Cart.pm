@@ -199,14 +199,15 @@ around clear => sub {
 
 around set_name => sub {
     my ( $orig, $self ) = ( shift, shift );
+    my $new_name = $_[0];
     my $ret;
 
     $self->clear_error;
 
     my $old_name = $self->get_name;
 
-    # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
+    # run hook before renaming the cart
+    $self->execute_hook( 'before_cart_rename', $self, $old_name, $new_name );
     return if $self->has_error;
 
     # fire off the rename
@@ -215,7 +216,7 @@ around set_name => sub {
     $self->_set_last_modified( DateTime->now );
 
     # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
+    $self->execute_hook( 'after_cart_rename', $self, $old_name, $new_name );
 
     return $self->get_name;
 };
