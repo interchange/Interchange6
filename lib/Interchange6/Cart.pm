@@ -5,6 +5,7 @@ package Interchange6::Cart;
 use strict;
 use Carp;
 use DateTime;
+use Interchange6::Cart::Cost;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
@@ -24,14 +25,16 @@ use constant CART_DEFAULT => 'main';
 
 has costs => (
     is          => 'rwp',
-    isa         => ArrayRef [HashRef],
+    isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
-        clear_cost => 'clear',
-        cost_get   => 'get',
-        _cost_push => 'push',
-        get_costs  => 'elements',
+        clear_cost  => 'clear',
+        clear_costs => 'clear',
+        cost_get    => 'get',
+        cost_count  => 'count',
+        _cost_push  => 'push',
+        get_costs   => 'elements',
     },
     init_arg => undef,
 );
@@ -300,12 +303,33 @@ sub add {
 }
 
 sub apply_cost {
-    my ( $self, %args ) = @_;
+    my $self = shift;
+    my $cost = $_[0];
 
-    $self->_cost_push( \%args );
+    die "argument to apply_cost undefined" unless defined($cost);
+
+    if ( blessed($cost) ) {
+        die("Supplied cost not an Interchange6::Cart::Cost : " . ref($cost))
+          unless $cost->isa('Interchange6::Cart::Cost');
+    }
+    else {
+        if ( @_ % 2 ) {
+
+            # a hashref or obj
+            $cost = @_;
+        }
+        else {
+
+            # hash
+            $cost = {@_};
+        }
+        $cost = Interchange6::Cart::Cost->new( $cost );
+    }
+
+    $self->_cost_push( $cost );
 
     # clear cache for total if this is not an inclusive cost
-    $self->clear_total unless $args{inclusive};
+    $self->clear_total unless $cost->inclusive;
 }
 
 sub cost {
@@ -322,7 +346,7 @@ sub cost {
 
             # cost by name
             for my $c ( $self->get_costs ) {
-                if ( $c->{name} eq $loc ) {
+                if ( $c->name eq $loc ) {
                     $cost = $c;
                 }
             }
@@ -540,15 +564,15 @@ sub _calculate {
     $sum = 0;
 
     for my $calc (@$cost_ref) {
-        if ( $calc->{inclusive} && !$display ) {
+        if ( $calc->inclusive && !$display ) {
             next;
         }
 
-        if ( $calc->{relative} ) {
-            $sum += $subtotal * $calc->{amount};
+        if ( $calc->relative ) {
+            $sum += $subtotal * $calc->amount;
         }
         else {
-            $sum += $calc->{amount};
+            $sum += $calc->amount;
         }
     }
 
@@ -660,6 +684,10 @@ Removes all products from the cart.
 
 Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
 
+=head2 clear_costs
+
+Alias for clear_cost
+
 =head2 cost
 
 Returns particular cost by position or by name.
@@ -679,6 +707,10 @@ Returns the cost that was first applied to subtotal. By increasing the number yo
 =head2 costs
 
 Returns an array of all costs associated with the cart. Costs are ordered according to the order they were applied.
+
+=head2 cost_count
+
+Returns the number of different costs applied to the shopping cart.
 
 =head2 count
 
