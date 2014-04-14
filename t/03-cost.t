@@ -5,7 +5,8 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 22;
+#use Test::Most tests => 22;
+use Test::Most 'die';
 
 use Interchange6::Cart;
 
@@ -15,14 +16,23 @@ $cart = Interchange6::Cart->new;
 
 throws_ok(
     sub { $cart->apply_cost() },
-    qr/Missing required arguments: /,
+    qr/argument to apply_cost undefined/,
     "fail apply_cost with empty args"
 );
 
 throws_ok(
     sub { $cart->apply_cost(undef) },
-    qr/Single parameters to new\(\) must be a HASH ref/,
+    qr/argument to apply_cost undefined/,
     "fail apply_cost with undef arg"
+);
+
+my $ref = { foo => 'bar' };
+bless $ref, "Some::Bad::Class";
+
+throws_ok(
+    sub { $cart->apply_cost($ref) },
+    qr/Supplied cost not an Interchange6::Cart::Cost : Some::Bad::Class/,
+    "fail apply_cost with bad class as arg"
 );
 
 throws_ok(
@@ -120,3 +130,5 @@ $ret = $cart->cost('megatax');
 ok( $ret == 11, "Cost: $ret" );
 
 $cart->clear_cost;
+
+done_testing;

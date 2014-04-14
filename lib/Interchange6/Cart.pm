@@ -25,7 +25,7 @@ use constant CART_DEFAULT => 'main';
 
 has costs => (
     is          => 'rwp',
-    isa         => ArrayRef [HashRef],
+    isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
@@ -304,27 +304,25 @@ sub add {
 
 sub apply_cost {
     my $self = shift;
+    my $cost = $_[0];
 
-    my $cost;
-
-    if ( @_ % 2 ) {
-
-        # a hashref or obj
-        $cost = @_;
-    }
-    else {
-
-        # hash
-        $cost = {@_};
-    }
+    die "argument to apply_cost undefined" unless defined($cost);
 
     if ( blessed($cost) ) {
-        die "cost argument is not an Interchange6::Cart::Cost"
-          unless ( $cost->isa('Interchange6::Cart::Cost') );
+        die("Supplied cost not an Interchange6::Cart::Cost : " . ref($cost))
+          unless $cost->isa('Interchange6::Cart::Cost');
     }
     else {
+        if ( @_ % 2 ) {
 
-        # create cost obj
+            # a hashref or obj
+            $cost = @_;
+        }
+        else {
+
+            # hash
+            $cost = {@_};
+        }
         $cost = Interchange6::Cart::Cost->new( $cost );
     }
 
