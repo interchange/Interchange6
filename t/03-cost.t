@@ -15,13 +15,13 @@ $cart = Interchange6::Cart->new;
 
 throws_ok(
     sub { $cart->apply_cost() },
-    qr/undefined argument passed to apply_cost/,
+    qr/Missing required arguments: /,
     "fail apply_cost with empty args"
 );
 
 throws_ok(
     sub { $cart->apply_cost(undef) },
-    qr/undefined argument passed to apply_cost/,
+    qr/Single parameters to new\(\) must be a HASH ref/,
     "fail apply_cost with undef arg"
 );
 

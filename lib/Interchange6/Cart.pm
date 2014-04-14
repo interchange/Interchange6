@@ -304,10 +304,19 @@ sub add {
 
 sub apply_cost {
     my $self = shift;
-    my $cost = $_[0];
-    my %args;
 
-    die "undefined argument passed to apply_cost" unless defined $cost;
+    my $cost;
+
+    if ( @_ % 2 ) {
+
+        # a hashref or obj
+        $cost = @_;
+    }
+    else {
+
+        # hash
+        $cost = {@_};
+    }
 
     if ( blessed($cost) ) {
         die "cost argument is not an Interchange6::Cart::Cost"
@@ -315,27 +324,14 @@ sub apply_cost {
     }
     else {
 
-        # we got a hash(ref) rather than a Cost object
-
-        my %args;
-
-        if ( is_HashRef($cost) ) {
-
-            # copy args
-            %args = %{$cost};
-        }
-        else {
-
-            %args = @_;
-        }
-
-        $cost = Interchange6::Cart::Cost->new( \%args );
+        # create cost obj
+        $cost = Interchange6::Cart::Cost->new( $cost );
     }
 
     $self->_cost_push( $cost );
 
     # clear cache for total if this is not an inclusive cost
-    $self->clear_total unless $args{inclusive};
+    $self->clear_total unless $cost->inclusive;
 }
 
 sub cost {
@@ -352,7 +348,7 @@ sub cost {
 
             # cost by name
             for my $c ( $self->get_costs ) {
-                if ( $c->{name} eq $loc ) {
+                if ( $c->name eq $loc ) {
                     $cost = $c;
                 }
             }
@@ -570,15 +566,15 @@ sub _calculate {
     $sum = 0;
 
     for my $calc (@$cost_ref) {
-        if ( $calc->{inclusive} && !$display ) {
+        if ( $calc->inclusive && !$display ) {
             next;
         }
 
-        if ( $calc->{relative} ) {
-            $sum += $subtotal * $calc->{amount};
+        if ( $calc->relative ) {
+            $sum += $subtotal * $calc->amount;
         }
         else {
-            $sum += $calc->{amount};
+            $sum += $calc->amount;
         }
     }
 
