@@ -12,6 +12,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     BUILD_REQUIRES => {
+        'MooseX::CoverableModifiers' => 0.30,
         'Test::More' => 0,
         'Test::Most' => 0,
         'Test::Warnings' => 0,

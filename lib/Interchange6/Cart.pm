@@ -10,6 +10,7 @@ use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
 use Moo;
+use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
 use Interchange6::Types;
 use Interchange6::Hook;
