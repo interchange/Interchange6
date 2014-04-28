@@ -89,7 +89,6 @@ has products => (
         _product_set   => 'set',
     },
     reader   => 'get_products',
-    writer   => 'set_products',
     init_arg => undef,
 );
 
