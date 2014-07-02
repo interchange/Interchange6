@@ -2,7 +2,7 @@ NAME
     Interchange6 - Open Source Shop Machine
 
 VERSION
-    0.030
+    0.040
 
 DESCRIPTION
     Interchange6, the Open Source Shop Machine, is the Modern Perl ecosystem
@@ -24,10 +24,9 @@ CART
 CAVEATS
     Please anticipate API changes in this early state of development.
 
-AUTHOR
+AUTHORS
     Stefan Hornburg (Racke), `racke@linuxia.de'
 
-CONTRIBUTORS
     Peter Mottram `peter@sysnix.com'
 
 LICENSE AND COPYRIGHT

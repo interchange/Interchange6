@@ -1,5 +1,20 @@
 Revision history for Interchange6
 
+0.040 Wed Jul  2 11:57:43 2014 CEST
+
+    [ENHANCEMENTS]
+
+    * Add Interchange::Cart::Cost class (Peter Mottram, GH #12).
+
+    [BUG FIXES]
+
+    * Remove set_products writer from Cart products attribute
+      (Peter Mottram, Sam Batschelet).
+
+    [TESTS]
+
+    * Add support for code coverage tests (Peter Mottram).
+
 0.030 Fri Apr  4 19:40:19 2014 CEST
 
     [ENHANCEMENTS]
