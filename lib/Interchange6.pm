@@ -40,11 +40,9 @@ and price caching.
 
 Please anticipate API changes in this early state of development.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Stefan Hornburg (Racke), C<racke@linuxia.de>
-
-=head1 CONTRIBUTORS
 
 Peter Mottram C<peter@sysnix.com>
 
