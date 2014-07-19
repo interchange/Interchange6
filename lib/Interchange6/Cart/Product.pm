@@ -95,6 +95,27 @@ has uri => (
     isa      => VarChar [255],
 );
 
+=item extra
+
+Product extra
+
+=cut
+
+has extra => (
+    is  => 'rwp',
+    isa => ArrayRef [ InstanceOf ['Interchange::Cart::Product::Extra'] ],
+    default     => sub { [] },
+    handles_via => 'Array',
+    handles     => {
+        clear          => 'clear',
+        count          => 'count',
+        is_empty       => 'is_empty',
+    },
+    reader   => 'get_extra',
+    writer   => 'set_extra',
+    init_arg => undef,
+);
+
 =back
 
 =head1 METHODS
@@ -112,4 +133,15 @@ sub subtotal {
     return $self->price * $self->quantity;
 };
 
+=head2 extra
+
+Adds extra data to cart product.
+
+=cut
+
+sub extra {
+    my ($self, $args) = @_;
+
+    return
+}
 1;
