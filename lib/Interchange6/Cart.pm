@@ -7,6 +7,7 @@ use Carp;
 use DateTime;
 use Interchange6::Cart::Cost;
 use Interchange6::Cart::Product;
+use Interchange6::Cart::Product::Extra;
 use Scalar::Util 'blessed';
 use Try::Tiny;
 use Moo;
@@ -612,6 +613,8 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
   my $product = Interchange::Cart::Product->new( ... );
 
   $cart->add($product);
+
+  $product->extra( name => 'image_path', value => '/image/abc.jpg' );
 
   $cart->apply_cost( ... );
 
