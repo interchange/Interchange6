@@ -616,6 +616,10 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
   $product->extra( name => 'image_path', value => '/image/abc.jpg' );
 
+  my $extra = Interchange::Cart::Product::Extra->( ... );
+
+  $extra->add( 'ABC', { name => 'engraving', value => 'Happy Birthday Mom!' } );
+
   $cart->apply_cost( ... );
 
   my $total = $cart->total;
