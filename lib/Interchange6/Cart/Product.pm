@@ -5,6 +5,14 @@ package Interchange6::Cart::Product;
 use strict;
 use Moo;
 use Interchange6::Types;
+use Interchange6::Cart::Product::Extra;
+use Scalar::Util 'blessed';
+use Data::Dumper::Concise;
+
+use MooseX::CoverableModifiers;
+use MooX::HandlesVia;
+use Interchange6::Types;
+use Interchange6::Hook;
 
 use namespace::clean;
 
@@ -103,16 +111,18 @@ Product extra
 
 has extra => (
     is  => 'rwp',
-    isa => ArrayRef [ InstanceOf ['Interchange::Cart::Product::Extra'] ],
-    default     => sub { [] },
-    handles_via => 'Array',
+    isa => HashRef [ InstanceOf ['Interchange::Cart::Product::Extra'] ],
+    default     => sub { {} },
+    handles_via => 'Hash',
     handles     => {
         clear          => 'clear',
         count          => 'count',
         is_empty       => 'is_empty',
-    },
+        _extra_push      => 'push',
+        extra_get      => 'get',
+        delete_get     => 'delete',
+   },
     reader   => 'get_extra',
-    writer   => 'set_extra',
     init_arg => undef,
 );
 
@@ -133,15 +143,49 @@ sub subtotal {
     return $self->price * $self->quantity;
 };
 
-=head2 extra
+=head2 add_extra
 
 Adds extra data to cart product.
 
 =cut
 
-sub extra {
-    my ($self, $args) = @_;
+sub add_extra {
+    my $self = shift;
+    my $extra = $_[0];
 
-    return
+    print STDERR Dumper($self);
+    print STDERR Dumper($extra);
+
+    die "argument to add_extra undefined" unless defined($extra);
+
+    if ( blessed($extra) ) {
+        die("Supplied arg not an Interchange6::Cart::Product::Extra : " . ref($extra))
+          unless $extra->isa('Interchange6::Cart::Product::Extra');
+    }
+    else {
+
+        # we got a hash(ref) rather than an Product Extra
+
+        my %args;
+
+        if ( is_HashRef($extra) ) {
+
+            # copy args
+            %args = %{$extra};
+        }
+        else {
+
+            %args = @_;
+        }
+
+        print STDERR Dumper(\%args);
+    
+        $extra = Interchange6::Cart::Product::Extra->new( \%args );
+}    
+
+ print STDERR Dumper($extra);
+
+    $self->_extra_push( $extra );
 }
+
 1;
