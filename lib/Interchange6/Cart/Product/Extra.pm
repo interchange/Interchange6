@@ -22,7 +22,7 @@ Cart product extra data class for L<Interchange6>.
 
 =item * cart_product_extra_id
 
-Can be used by subclasses to tie extra cart product data to L<Interchange6::Schema::Result::Cart::Product::Extra>.
+Can be used by subclasses to tie extra cart product data to L<Interchange6::Schema::Result::CartProductExtra>.
 
 =cut
 
