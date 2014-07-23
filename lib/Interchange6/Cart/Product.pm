@@ -6,9 +6,8 @@ use strict;
 use Moo;
 use Interchange6::Types;
 use Interchange6::Cart::Product::Extra;
-use Scalar::Util 'blessed';
-use Data::Dumper::Concise;
 
+use Scalar::Util 'blessed';
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
 use Interchange6::Types;
@@ -110,20 +109,15 @@ Product extra
 =cut
 
 has extra => (
-    is  => 'rwp',
+    is  => 'rw',
     isa => HashRef [ InstanceOf ['Interchange::Cart::Product::Extra'] ],
     default     => sub { {} },
     handles_via => 'Hash',
     handles     => {
-        clear          => 'clear',
-        count          => 'count',
-        is_empty       => 'is_empty',
-        _extra_push      => 'push',
-        extra_get      => 'get',
-        delete_get     => 'delete',
+        set_val     => 'set',
+        get_val      => 'get',
+        all_keys     => 'keys',
    },
-    reader   => 'get_extra',
-    init_arg => undef,
 );
 
 =back
@@ -150,13 +144,11 @@ Adds extra data to cart product.
 =cut
 
 sub add_extra {
-    my $self = shift;
-    my $extra = $_[0];
+    my ($self, $id, $extra) = @_;
 
-    print STDERR Dumper($self);
-    print STDERR Dumper($extra);
+    die "id argument to add_extra undefined" unless defined($id);
 
-    die "argument to add_extra undefined" unless defined($extra);
+    die "extra argument to add_extra undefined" unless defined($extra);
 
     if ( blessed($extra) ) {
         die("Supplied arg not an Interchange6::Cart::Product::Extra : " . ref($extra))
@@ -164,28 +156,21 @@ sub add_extra {
     }
     else {
 
-        # we got a hash(ref) rather than an Product Extra
+        # we got a hash(ref) rather than Extra
 
         my %args;
 
         if ( is_HashRef($extra) ) {
-
-            # copy args
             %args = %{$extra};
         }
         else {
-
             %args = @_;
         }
 
-        print STDERR Dumper(\%args);
-    
-        $extra = Interchange6::Cart::Product::Extra->new( \%args );
-}    
-
- print STDERR Dumper($extra);
-
-    $self->_extra_push( $extra );
+       my $extra  = 'Interchange6::Cart::Product::Extra'->new( %args );
+       print STDERR Dumper($extra);
+       $self->set_val($id, $extra );
+    }
 }
 
 1;
