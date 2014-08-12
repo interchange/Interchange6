@@ -21,7 +21,6 @@ WriteMakefile(
         'MooseX::CoverableModifiers' => 0.30,
         'MooX::HandlesVia' => 0,
         'DateTime' => 0,
-	'Interchange6::Schema' => 0.040,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Interchange6-*' },
