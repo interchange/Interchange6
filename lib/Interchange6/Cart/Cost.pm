@@ -80,7 +80,7 @@ has inclusive => (
 
 =item * amount
 
-Required amount of the cost. This is the absolute cost unless L<relative> is true in which case it realtive to the L<Cart subtotal|Interchange6::Cart/subtotal>. For example for a tax of 8% amount should be set to 0.08
+Required amount of the cost. This is the absolute cost unless L<relative> is true in which case it is relative to the L<Cart subtotal|Interchange6::Cart/subtotal>. For example for a tax of 8% amount should be set to 0.08
 
 =cut
 
