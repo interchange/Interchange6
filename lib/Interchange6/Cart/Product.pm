@@ -5,6 +5,13 @@ package Interchange6::Cart::Product;
 use strict;
 use Moo;
 use Interchange6::Types;
+use Interchange6::Cart::Product::Extra;
+
+use Scalar::Util 'blessed';
+use MooseX::CoverableModifiers;
+use MooX::HandlesVia;
+use Interchange6::Types;
+use Interchange6::Hook;
 
 use namespace::clean;
 
@@ -95,6 +102,24 @@ has uri => (
     isa      => VarChar [255],
 );
 
+=item extra
+
+Product extra
+
+=cut
+
+has extra => (
+    is  => 'rw',
+    isa => HashRef [ InstanceOf ['Interchange::Cart::Product::Extra'] ],
+    default     => sub { {} },
+    handles_via => 'Hash',
+    handles     => {
+        set_val     => 'set',
+        get_val      => 'get',
+        all_keys     => 'keys',
+   },
+);
+
 =back
 
 =head1 METHODS
@@ -111,5 +136,41 @@ sub subtotal {
 
     return $self->price * $self->quantity;
 };
+
+=head2 add_extra
+
+Adds extra data to cart product.
+
+=cut
+
+sub add_extra {
+    my ($self, $id, $extra) = @_;
+
+    die "id argument to add_extra undefined" unless defined($id);
+
+    die "extra argument to add_extra undefined" unless defined($extra);
+
+    if ( blessed($extra) ) {
+        die("Supplied arg not an Interchange6::Cart::Product::Extra : " . ref($extra))
+          unless $extra->isa('Interchange6::Cart::Product::Extra');
+    }
+    else {
+
+        # we got a hash(ref) rather than Extra
+
+        my %args;
+
+        if ( is_HashRef($extra) ) {
+            %args = %{$extra};
+        }
+        else {
+            %args = @_;
+        }
+
+       my $extra  = 'Interchange6::Cart::Product::Extra'->new( %args );
+       print STDERR Dumper($extra);
+       $self->set_val($id, $extra );
+    }
+}
 
 1;
