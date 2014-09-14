@@ -663,11 +663,17 @@ B<Example:> Absolute cost
 
 B<Example:> Relative cost
 
-    Uses percentage instead of value for amount. Amount 0.19 in example is 19%.
+    Uses percentage instead of value for amount.
 
     relative is a boolean value (0/1).
 
+    Add 19% German VAT:
+
     $cart->apply_cost(amount => 0.19, name => 'tax', label => 'VAT', relative => 1);
+
+    Add 10% discount (negative amount):
+
+    $cart->apply_cost(amount => -0.1, name => 'discount', label => 'Discount', relative => 1);
 
 B<Example:> Inclusive cost
 
