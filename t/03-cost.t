@@ -83,7 +83,7 @@ ok( $ret == 5, "Total: $ret" );
 $ret = $cart->cost('fee');
 ok( $ret == 5, "Total: $ret" );
 
-lives_ok( sub { $cart->clear_cost() }, "Clear costs" );
+lives_ok( sub { $cart->clear_costs() }, "Clear costs" );
 
 # relative amount to empty cart
 $cart->apply_cost( name => 'tax', amount => 0.5, relative => 1 );
@@ -91,7 +91,7 @@ $cart->apply_cost( name => 'tax', amount => 0.5, relative => 1 );
 $ret = $cart->total;
 ok( $ret == 0, "Total: $ret" );
 
-$cart->clear_cost;
+$cart->clear_costs;
 
 # relative amount to cart with one product
 $product = { sku => 'ABC', name => 'Foobar', price => 22 };
@@ -110,7 +110,7 @@ ok( $ret == 11, "Cost: $ret" );
 $ret = $cart->cost('megatax');
 ok( $ret == 11, "Cost: $ret" );
 
-$cart->clear_cost;
+$cart->clear_costs;
 
 # relative and inclusive amount to cart with one product
 $cart->apply_cost(
@@ -129,6 +129,6 @@ ok( $ret == 11, "Cost: $ret" );
 $ret = $cart->cost('megatax');
 ok( $ret == 11, "Cost: $ret" );
 
-$cart->clear_cost;
+$cart->clear_costs;
 
 done_testing;

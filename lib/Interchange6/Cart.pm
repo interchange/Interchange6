@@ -15,6 +15,7 @@ use MooX::HandlesVia;
 use Interchange6::Types;
 use Interchange6::Hook;
 
+with 'Interchange6::Role::Costs';
 with 'Interchange6::Role::Errors';
 with 'Interchange6::Role::Hookable';
 
@@ -23,22 +24,6 @@ use namespace::clean;
 use constant CART_DEFAULT => 'main';
 
 # attributes
-
-has costs => (
-    is          => 'rwp',
-    isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
-    default     => sub { [] },
-    handles_via => 'Array',
-    handles     => {
-        clear_cost  => 'clear',
-        clear_costs => 'clear',
-        cost_get    => 'get',
-        cost_count  => 'count',
-        _cost_push  => 'push',
-        get_costs   => 'elements',
-    },
-    init_arg => undef,
-);
 
 has created => (
     is      => 'ro',
@@ -156,11 +141,6 @@ sub _build_total {
 }
 
 # before/after/around various methods
-
-after clear_cost => sub {
-    my $self = shift;
-    $self->clear_total;
-};
 
 around add_hook => sub {
     my ( $orig, $self ) = ( shift, shift );
@@ -301,70 +281,6 @@ sub add {
     $self->_set_last_modified( DateTime->now );
 
     return $product;
-}
-
-sub apply_cost {
-    my $self = shift;
-    my $cost = $_[0];
-
-    die "argument to apply_cost undefined" unless defined($cost);
-
-    if ( blessed($cost) ) {
-        die("Supplied cost not an Interchange6::Cart::Cost : " . ref($cost))
-          unless $cost->isa('Interchange6::Cart::Cost');
-    }
-    else {
-        if ( @_ % 2 ) {
-
-            # a hashref or obj
-            $cost = @_;
-        }
-        else {
-
-            # hash
-            $cost = {@_};
-        }
-        $cost = Interchange6::Cart::Cost->new( $cost );
-    }
-
-    $self->_cost_push( $cost );
-
-    # clear cache for total if this is not an inclusive cost
-    $self->clear_total unless $cost->inclusive;
-}
-
-sub cost {
-    my ( $self, $loc ) = @_;
-    my ( $cost, $ret );
-
-    if ( defined $loc ) {
-        if ( $loc =~ /^\d+$/ ) {
-
-            # cost by position
-            $cost = $self->cost_get($loc);
-        }
-        elsif ( $loc =~ /\S/ ) {
-
-            # cost by name
-            for my $c ( $self->get_costs ) {
-                if ( $c->name eq $loc ) {
-                    $cost = $c;
-                }
-            }
-        }
-    }
-    else {
-        die "Either position or name required as argument to cost";
-    }
-
-    if ( defined $cost ) {
-        $ret = $self->_calculate( $self->subtotal, $cost, 1 );
-    }
-    else {
-        die "Bad argument to cost: " . $loc;
-    }
-
-    return $ret;
 }
 
 sub find {
@@ -651,73 +567,9 @@ This binds a coderef to an installed hook.
 
 See L</HOOKS> for details of the available hooks.
 
-=head2 apply_cost
-
-Apply cost to cart. apply_cost is a generic method typicaly used for taxes, discounts, coupons, gift certificates,...
-
-B<Example:> Absolute cost
-
-    Uses absolute value for amount. Amount 5 is 5 units of currency used (ie. $5).
-
-    $cart->apply_cost(amount => 5, name => 'shipping', label => 'Shipping');
-
-B<Example:> Relative cost
-
-    Uses percentage instead of value for amount.
-
-    relative is a boolean value (0/1).
-
-    Add 19% German VAT:
-
-    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'VAT', relative => 1);
-
-    Add 10% discount (negative amount):
-
-    $cart->apply_cost(amount => -0.1, name => 'discount', label => 'Discount', relative => 1);
-
-B<Example:> Inclusive cost
-
-    Same as relative cost, but it assumes that tax was included in the subtotal already, and only displays it (19% of subtotal value in example). Inclusive is a boolean value (0/1).
-
-    $cart->apply_cost(amount => 0.19, name => 'tax', label => 'Sales Tax', relative => 1, inclusive => 1);
-
-=cut
-
 =head2 clear
 
 Removes all products from the cart.
-
-=head2 clear_cost
-
-Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
-
-=head2 clear_costs
-
-Alias for clear_cost
-
-=head2 cost
-
-Returns particular cost by position or by name.
-
-B<Example:> Return tax value by name
-
-  $cart->cost('tax');
-
-Returns value of the tax (absolute value in your currency, not percentage)
-
-B<Example:> Return tax value by position
-
-  $cart->cost(0);
-
-Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
-
-=head2 costs
-
-Returns an array of all costs associated with the cart. Costs are ordered according to the order they were applied.
-
-=head2 cost_count
-
-Returns the number of different costs applied to the shopping cart.
 
 =head2 count
 

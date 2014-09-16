@@ -4,6 +4,7 @@ lib/Interchange6/Cart.pm
 lib/Interchange6/Cart/Cost.pm
 lib/Interchange6/Cart/Product.pm
 lib/Interchange6/Hook.pm
+lib/Interchange6/Role/Costs.pm
 lib/Interchange6/Role/Errors.pm
 lib/Interchange6/Role/Hookable.pm
 lib/Interchange6/Types.pm
