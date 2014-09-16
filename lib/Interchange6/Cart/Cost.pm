@@ -78,9 +78,21 @@ has inclusive => (
     default => 0,
 );
 
+=item * compound
+
+Boolean defaults to 0. If true signifies that any following costs should be applied to the modified price B<after> this cost has been applied. This might be used for such things as discounts which are applied before taxes are applied to the modified price.
+
+=cut
+
+has compound => (
+    is       => 'ro',
+    isa      => Bool,
+    default  => 0,
+);
+
 =item * amount
 
-Required amount of the cost. This is the absolute cost unless L<relative> is true in which case it is relative to the L<object subtotal|Interchange6::Role::Cost/subtotal>. For example for a tax of 8% amount should be set to 0.08
+Required amount of the cost. This is the absolute cost unless L</relative> is true in which case it is relative to the L<object subtotal|Interchange6::Role::Cost/subtotal>. For example for a tax of 8% amount should be set to 0.08
 
 =cut
 
@@ -88,6 +100,18 @@ has amount => (
     is      => 'ro',
     isa     => AllOf [ Defined, Num ],
     required => 1,
+);
+
+=item * absolute_amount
+
+Calculated absolute amount of cost. Unless L</relative> is true this will be the same as L</amount>. If L</relative> is true then this is value is recalulated whenever C<total> is called on the object.
+
+=cut
+
+has absolute_amount => (
+    is     => 'rw',
+    isa    => Num,
+    coerce => sub { sprintf( "%.2f", $_[0] ) },
 );
 
 =back

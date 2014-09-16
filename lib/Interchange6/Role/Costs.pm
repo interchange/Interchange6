@@ -11,7 +11,7 @@ use Interchange6::Types;
 
 use namespace::clean;
 
-requires '_build_subtotal';
+requires 'subtotal';
 
 =head1 ATTRIBUTES
 
@@ -24,54 +24,20 @@ When called without arguments returns an array reference of all costs associated
 =cut
 
 has costs => (
-    is          => 'rwp',
+    is          => 'rw',
     isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
         clear_costs => 'clear',
         cost_get    => 'get',
+        cost_set    => 'set',
         cost_count  => 'count',
         _cost_push  => 'push',
         get_costs   => 'elements',
     },
     init_arg => undef,
 );
-
-=head2 subtotal
-
-Object subtotal. Consuming role should supply C<_build_subtotal>.
-
-=cut
-
-has subtotal => (
-    is      => 'lazy',
-    isa     => Num,
-    clearer => 1,
-);
-
-=head2 total
-
-Object total = subtotal + costs.
-
-=cut
-
-has total => (
-    is       => 'lazy',
-    isa      => Num,
-    clearer  => 1,
-);
-
-sub _build_total {
-    my $self = shift;
-
-    my $subtotal = $self->subtotal;
-
-    my $total = $subtotal + $self->_calculate($subtotal);
-
-    return $total;
-}
-
 
 =head1 METHODS
 
@@ -151,9 +117,6 @@ sub apply_cost {
     }
 
     $self->_cost_push( $cost );
-
-    # clear cache for total if this is not an inclusive cost
-    $self->clear_total unless $cost->inclusive;
 }
 
 =head2 cost
@@ -199,57 +162,66 @@ sub cost {
     }
 
     if ( defined $cost ) {
-        $ret = $self->_calculate( $self->subtotal, $cost, 1 );
+        # calculate total in order to reset all costs
+        my $total = $self->total;
     }
     else {
         die "Bad argument to cost: " . $loc;
     }
 
-    return $ret;
+    return $cost->absolute_amount;
 }
 
-=head1 METHOD MODIFIERS
+=head2 total
 
-=head2 after clear_costs
-
-Calls $object->clear_total
+Object total = subtotal + costs.
 
 =cut
 
-after clear_costs => sub {
+sub total {
     my $self = shift;
-    $self->clear_total;
-};
+
+    my $subtotal = $self->subtotal;
+
+    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
+}
 
 # private methods
 
 sub _calculate {
     my ( $self, $subtotal, $costs, $display ) = @_;
-    my ( $cost_ref, $sum );
+    my ( @costs, $sum, $reset_costs );
 
     if ( ref $costs eq 'HASH' ) {
-        $cost_ref = [$costs];
+        @costs = ($costs);
     }
     elsif ( ref $costs eq 'ARRAY' ) {
-        $cost_ref = $costs;
+        @costs = @$costs;
     }
     else {
-        $cost_ref = $self->costs;
+        @costs = $self->get_costs;
+        $reset_costs = 1;
     }
 
     $sum = 0;
 
-    for my $calc (@$cost_ref) {
-        if ( $calc->inclusive && !$display ) {
-            next;
-        }
+    foreach my $i (0..$#costs) {
 
-        if ( $calc->relative ) {
-            $sum += $subtotal * $calc->amount;
+        if ( $costs[$i]->relative ) {
+            $costs[$i]->absolute_amount($subtotal * $costs[$i]->amount);
         }
         else {
-            $sum += $calc->amount;
+            $costs[$i]->absolute_amount($costs[$i]->amount);
         }
+
+        if ( $costs[$i]->compound ) {
+            $subtotal += $costs[$i]->absolute_amount;
+        }
+
+        unless ( $costs[$i]->inclusive ) {
+            $sum += $costs[$i]->absolute_amount;
+        }
+        $self->cost_set($i, $costs[$i]) if $reset_costs;
     }
 
     return $sum;

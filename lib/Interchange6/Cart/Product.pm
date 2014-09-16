@@ -91,6 +91,8 @@ has price => (
 
 Product uri
 
+=back
+
 =cut
 
 has uri => (
@@ -98,27 +100,17 @@ has uri => (
     isa      => VarChar [255],
 );
 
-=item subtotal
+=head1 METHODS
 
-Subtotal calculated as price * quantity. Lazy-loaded and cleared on change of price or quantity. See L<Interchange6::Role::Cost/subtotal>.
+=head2 subtotal
 
-=back
+Subtotal calculated as price * quantity.
 
 =cut
 
-sub _build_subtotal {
+sub subtotal {
     my $self = shift;
-    return $self->price * $self->quantity;
+    return sprintf( "%.2f", $self->price * $self->quantity );
 }
-
-after price => sub {
-    my $self = shift;
-    $self->clear_subtotal
-};
-
-after quantity => sub {
-    my $self = shift;
-    $self->clear_subtotal
-};
 
 1;

@@ -92,20 +92,6 @@ has users_id => (
     writer => '_set_users_id',
 );
 
-# builders
-
-sub _build_subtotal {
-    my $self = shift;
-
-    my $subtotal = 0;
-
-    for my $product ( $self->products_array ) {
-        $subtotal += $product->total;
-    }
-
-    return $subtotal;
-}
-
 # before/after/around various methods
 
 around add_hook => sub {
@@ -132,8 +118,6 @@ around clear => sub {
     # fire off the clear
     $orig->( $self, @_ );
 
-    $self->clear_subtotal;
-    $self->clear_total;
     $self->_set_last_modified( DateTime->now );
 
     # run hook after clearing the cart
@@ -242,8 +226,6 @@ sub add {
     # final hook
     $self->execute_hook( 'after_cart_add', $self, $product, $update );
 
-    $self->clear_subtotal;
-    $self->clear_total;
     $self->_set_last_modified( DateTime->now );
 
     return $product;
@@ -362,6 +344,18 @@ sub sessions_id {
     }
 
     return $self->get_sessions_id;
+}
+
+sub subtotal {
+    my $self = shift;
+
+    my $subtotal = 0;
+
+    for my $product ( $self->products_array ) {
+        $subtotal += $product->total;
+    }
+
+    return $subtotal;
 }
 
 sub update {

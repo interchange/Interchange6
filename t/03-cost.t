@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-#use Test::Most tests => 22;
+use Data::Dumper;
 use Test::Most 'die';
 
 use Interchange6::Cart;
@@ -129,6 +129,47 @@ ok( $ret == 11, "Cost: $ret" );
 $ret = $cart->cost('megatax');
 ok( $ret == 11, "Cost: $ret" );
 
-$cart->clear_costs;
+$cart->clear;
+
+# product costs...
+
+$product = { sku => 'ABC', name => 'Foobar', price => 22, quantity => 2 };
+lives_ok( sub { $product = $cart->add($product) }, "Add 2 x product ABC to cart" );
+cmp_ok( $product->subtotal, '==', 44, "product subtotal is 44" );
+cmp_ok( $product->total, '==', 44, "product total is 44" );
+cmp_ok( $cart->subtotal, '==', 44, "cart subtotal is 44" );
+cmp_ok( $cart->total, '==', 44, "cart total is 44" );
+
+lives_ok(
+    sub {
+        $product->apply_cost(
+            amount   => -0.2,
+            name     => 'discount',
+            label    => 'Discount',
+            relative => 1,
+            compound => 1,
+        )
+    }, "Apply 20% discount to product"
+);
+cmp_ok( $product->subtotal, '==', 44, "product subtotal is 44" );
+cmp_ok( $product->total, '==', 35.20, "product total is 35.20" );
+cmp_ok( $cart->subtotal, '==', 35.20, "cart subtotal is 35.20" );
+cmp_ok( $cart->total, '==', 35.20, "cart total is 35.20" );
+
+lives_ok(
+    sub {
+        $product->apply_cost(
+            amount   => 0.18,
+            name     => 'tax',
+            label    => 'VAT',
+            relative => 1,
+        )
+    }, "Add 18% VAT to discounted product"
+);
+cmp_ok( $product->subtotal, '==', 44, "product subtotal is 44" );
+cmp_ok( $product->total, '==', 41.54, "product total is 41.54" );
+cmp_ok( $product->cost('tax'), '==', 6.34, "product tax is 6.34" );
+cmp_ok( $cart->subtotal, '==', 41.54, "cart subtotal is 41.54" );
+cmp_ok( $cart->total, '==', 41.54, "cart total is 41.54" );
 
 done_testing;
