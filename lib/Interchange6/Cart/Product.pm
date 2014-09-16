@@ -5,6 +5,7 @@ package Interchange6::Cart::Product;
 use strict;
 use Moo;
 use Interchange6::Types;
+with 'Interchange6::Role::Costs';
 
 use namespace::clean;
 
@@ -15,6 +16,8 @@ Interchange6::Cart::Product - Cart product class for Interchange6 Shop Machine
 =head1 DESCRIPTION
 
 Cart product class for L<Interchange6>.
+
+See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head2 ITEM ATTRIBUTES
 
@@ -95,21 +98,27 @@ has uri => (
     isa      => VarChar [255],
 );
 
+=item subtotal
+
+Subtotal calculated as price * quantity. Lazy-loaded and cleared on change of price or quantity. See L<Interchange6::Role::Cost/subtotal>.
+
 =back
-
-=head1 METHODS
-
-=head2 subtotal
-
-Returns subtotal for this cart product.
-The subtotal is calculated by the multiplication of price and quantity.
 
 =cut
 
-sub subtotal {
-    my ($self) = @_;
-
+sub _build_subtotal {
+    my $self = shift;
     return $self->price * $self->quantity;
+}
+
+after price => sub {
+    my $self = shift;
+    $self->clear_subtotal
+};
+
+after quantity => sub {
+    my $self = shift;
+    $self->clear_subtotal
 };
 
 1;

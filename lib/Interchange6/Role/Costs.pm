@@ -2,18 +2,16 @@
 
 package Interchange6::Role::Costs;
 
-use Carp;
-use DateTime;
 use Interchange6::Cart::Cost;
-use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
-use Try::Tiny;
 use Moo::Role;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
 use Interchange6::Types;
 
 use namespace::clean;
+
+requires '_build_subtotal';
 
 =head1 ATTRIBUTES
 
@@ -39,6 +37,41 @@ has costs => (
     },
     init_arg => undef,
 );
+
+=head2 subtotal
+
+Object subtotal. Consuming role should supply C<_build_subtotal>.
+
+=cut
+
+has subtotal => (
+    is      => 'lazy',
+    isa     => Num,
+    clearer => 1,
+);
+
+=head2 total
+
+Object total = subtotal + costs.
+
+=cut
+
+has total => (
+    is       => 'lazy',
+    isa      => Num,
+    clearer  => 1,
+);
+
+sub _build_total {
+    my $self = shift;
+
+    my $subtotal = $self->subtotal;
+
+    my $total = $subtotal + $self->_calculate($subtotal);
+
+    return $total;
+}
+
 
 =head1 METHODS
 
@@ -187,5 +220,39 @@ after clear_costs => sub {
     my $self = shift;
     $self->clear_total;
 };
+
+# private methods
+
+sub _calculate {
+    my ( $self, $subtotal, $costs, $display ) = @_;
+    my ( $cost_ref, $sum );
+
+    if ( ref $costs eq 'HASH' ) {
+        $cost_ref = [$costs];
+    }
+    elsif ( ref $costs eq 'ARRAY' ) {
+        $cost_ref = $costs;
+    }
+    else {
+        $cost_ref = $self->costs;
+    }
+
+    $sum = 0;
+
+    for my $calc (@$cost_ref) {
+        if ( $calc->inclusive && !$display ) {
+            next;
+        }
+
+        if ( $calc->relative ) {
+            $sum += $subtotal * $calc->amount;
+        }
+        else {
+            $sum += $calc->amount;
+        }
+    }
+
+    return $sum;
+}
 
 1;

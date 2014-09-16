@@ -56,7 +56,7 @@ has label => (
 
 =item * relative
 
-Boolean defaults to 0. If true then L<amount> is relative to L<Cart subtotal|Intechange6::Cart/subtotal>. If false then L<amount> is an absolute cost.
+Boolean defaults to 0. If true then L<amount> is relative to L<object subtotal|Intechange6::Role::Cost/subtotal>. If false then L<amount> is an absolute cost.
 
 =cut
 
@@ -68,7 +68,7 @@ has relative => (
 
 =item * inclusive
 
-Boolean defaults to 0. If true signifies that the cost is already included in L<Product price|Interchange6::Cart::Product/price> for example to calculate the tax component for gross prices.
+Boolean defaults to 0. If true signifies that the cost is already included in the price for example to calculate the tax component for gross prices.
 
 =cut
 
@@ -80,7 +80,7 @@ has inclusive => (
 
 =item * amount
 
-Required amount of the cost. This is the absolute cost unless L<relative> is true in which case it is relative to the L<Cart subtotal|Interchange6::Cart/subtotal>. For example for a tax of 8% amount should be set to 0.08
+Required amount of the cost. This is the absolute cost unless L<relative> is true in which case it is relative to the L<object subtotal|Interchange6::Role::Cost/subtotal>. For example for a tax of 8% amount should be set to 0.08
 
 =cut
 

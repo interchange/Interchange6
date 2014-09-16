@@ -85,30 +85,6 @@ has sessions_id => (
     writer  => '_set_sessions_id',
 );
 
-# subtotal and total are declared lazy with a builder and clearer so that
-# instead of tracking whether their values are cached we can just call:
-#   $self->clear_subtotal
-# and then when the accessor is next called the builder method calculates
-# the new value for us
-
-has subtotal => (
-    is       => 'ro',
-    isa      => Num,
-    builder  => '_build_subtotal',
-    lazy     => 1,
-    clearer  => 1,
-    init_arg => undef,
-);
-
-has total => (
-    is       => 'ro',
-    isa      => Num,
-    builder  => '_build_total',
-    lazy     => 1,
-    clearer  => 1,
-    init_arg => undef,
-);
-
 has users_id => (
     is     => 'rwp',
     isa    => Str,
@@ -124,20 +100,10 @@ sub _build_subtotal {
     my $subtotal = 0;
 
     for my $product ( $self->products_array ) {
-        $subtotal += $product->price * $product->quantity;
+        $subtotal += $product->total;
     }
 
     return $subtotal;
-}
-
-sub _build_total {
-    my $self = shift;
-
-    my $subtotal = $self->subtotal;
-
-    my $total = $subtotal + $self->_calculate($subtotal);
-
-    return $total;
 }
 
 # before/after/around various methods
@@ -462,40 +428,6 @@ sub users_id {
     return $self->get_users_id;
 }
 
-# private methods
-
-sub _calculate {
-    my ( $self, $subtotal, $costs, $display ) = @_;
-    my ( $cost_ref, $sum );
-
-    if ( ref $costs eq 'HASH' ) {
-        $cost_ref = [$costs];
-    }
-    elsif ( ref $costs eq 'ARRAY' ) {
-        $cost_ref = $costs;
-    }
-    else {
-        $cost_ref = $self->costs;
-    }
-
-    $sum = 0;
-
-    for my $calc (@$cost_ref) {
-        if ( $calc->inclusive && !$display ) {
-            next;
-        }
-
-        if ( $calc->relative ) {
-            $sum += $subtotal * $calc->amount;
-        }
-        else {
-            $sum += $calc->amount;
-        }
-    }
-
-    return $sum;
-}
-
 # compatibility methods
 
 sub products {
@@ -536,6 +468,8 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 =head1 DESCRIPTION
 
 Generic cart class for L<Interchange6>.
+
+See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head1 METHODS
 
