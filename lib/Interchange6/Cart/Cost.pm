@@ -108,7 +108,7 @@ Calculated absolute amount of cost. Unless L</relative> is true this will be the
 
 =cut
 
-has absolute_amount => (
+has current_amount => (
     is     => 'rw',
     isa    => Num,
     coerce => sub { sprintf( "%.2f", $_[0] ) },

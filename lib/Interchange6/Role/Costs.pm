@@ -169,7 +169,7 @@ sub cost {
         die "Bad argument to cost: " . $loc;
     }
 
-    return $cost->absolute_amount;
+    return $cost->current_amount;
 }
 
 =head2 total
@@ -208,18 +208,18 @@ sub _calculate {
     foreach my $i (0..$#costs) {
 
         if ( $costs[$i]->relative ) {
-            $costs[$i]->absolute_amount($subtotal * $costs[$i]->amount);
+            $costs[$i]->current_amount($subtotal * $costs[$i]->amount);
         }
         else {
-            $costs[$i]->absolute_amount($costs[$i]->amount);
+            $costs[$i]->current_amount($costs[$i]->amount);
         }
 
         if ( $costs[$i]->compound ) {
-            $subtotal += $costs[$i]->absolute_amount;
+            $subtotal += $costs[$i]->current_amount;
         }
 
         unless ( $costs[$i]->inclusive ) {
-            $sum += $costs[$i]->absolute_amount;
+            $sum += $costs[$i]->current_amount;
         }
         $self->cost_set($i, $costs[$i]) if $reset_costs;
     }
