@@ -278,8 +278,8 @@ sub remove {
         $self->_delete($index);
 
         # reset totals & modified before calling hook
-        $self->clear_subtotal;
-        $self->clear_total;
+        #$self->clear_subtotal;
+        #$self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_remove', $self, $product );
@@ -393,8 +393,8 @@ sub update {
 
         $product->quantity($qty);
 
-        $self->clear_subtotal;
-        $self->clear_total;
+        #$self->clear_subtotal;
+        #$self->clear_total;
         $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_update', $self, $product, $update );
