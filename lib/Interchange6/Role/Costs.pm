@@ -17,7 +17,7 @@ requires 'subtotal';
 
 =head2 costs
 
-Holds an arrayrey of L<Interchange::Cart::Cost> items.
+Holds an array reference of L<Interchange::Cart::Cost> items.
 
 When called without arguments returns an array reference of all costs associated with the object. Costs are ordered according to the order they were applied.
 
