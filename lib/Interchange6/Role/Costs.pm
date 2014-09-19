@@ -11,8 +11,6 @@ use Interchange6::Types;
 
 use namespace::clean;
 
-requires 'subtotal';
-
 =head1 ATTRIBUTES
 
 =head2 costs
@@ -170,20 +168,6 @@ sub cost {
     }
 
     return $cost->current_amount;
-}
-
-=head2 total
-
-Object total = subtotal + costs.
-
-=cut
-
-sub total {
-    my $self = shift;
-
-    my $subtotal = $self->subtotal;
-
-    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
 }
 
 # private methods

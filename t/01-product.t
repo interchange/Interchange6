@@ -127,7 +127,7 @@ $args->{quantity} = 4;
 $args->{price}    = undef;
 
 throws_ok { $product = Interchange6::Cart::Product->new($args) }
-qr/price.+not defined/,
+qr/price.+not a positive numeric/,
   "create Product with undef price";
 
 # empty price

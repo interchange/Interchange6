@@ -59,6 +59,24 @@ has id => (
     isa => Str,
 );
 
+=head2 discount_percent
+
+Cart-wide discount percentage applied to each product in the cart after any product discounts and before product costs.
+
+=cut
+
+has discount_percent => (
+    is      => 'rw',
+    isa     => Num,
+    default => 0,
+);
+
+after discount_percent => sub {
+    my $self = shift;
+    map { $_->clear_price; $_->clear_subtotal; $_->clear_total }
+      $self->products_array;
+};
+
 =head2 name
 
 The cart name. Default is 'main'.
@@ -322,6 +340,7 @@ sub add {
 
         # a new product for this cart
 
+        $product->cart( $self );
         $self->_product_push($product);
     }
 
@@ -501,6 +520,20 @@ sub subtotal {
     map { $subtotal += $_->total } $self->products_array;
 
     return $subtotal;
+}
+
+=head2 total
+
+Returns current cart total including costs.
+
+=cut
+
+sub total {
+    my $self = shift;
+
+    my $subtotal = $self->subtotal;
+
+    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
 }
 
 =head2 update
