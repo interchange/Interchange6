@@ -96,14 +96,6 @@ has last_modified => (
 
 The cart name. Default is 'main'.
 
-=head2 get_name
-
-Returns cart name
-
-=head2 set_name( $new_name )
-
-Sets cart name
-
 =cut
 
 has name => (
@@ -111,40 +103,33 @@ has name => (
     isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
     default  => CART_DEFAULT,
     required => 1,
-    reader   => 'get_name',
-    writer   => 'set_name',
 );
 
-sub name {
-    my $self = shift;
-    if ( @_ > 0 ) {
-        $self->set_name( $_[0] );
-    }
-    return $self->get_name;
-}
-
-around set_name => sub {
+around name => sub {
     my ( $orig, $self ) = ( shift, shift );
-    my $new_name = $_[0];
-    my $ret;
 
-    $self->clear_error;
+    if ( @_ > 0 ) {
 
-    my $old_name = $self->get_name;
+        my $old_name = $self->name;
 
-    # run hook before renaming the cart
-    $self->execute_hook( 'before_cart_rename', $self, $old_name, $new_name );
-    return if $self->has_error;
+        $self->clear_error;
+        # run hook before renaming the cart
+        $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
+        return if $self->has_error;
 
-    # fire off the rename
-    $orig->( $self, @_ );
+        # fire off the rename
+        my $new_self = $orig->( $self, @_ );
 
-    $self->_set_last_modified( DateTime->now );
+        $self->_set_last_modified( DateTime->now );
 
-    # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_rename', $self, $old_name, $new_name );
+        # run hook after clearing the cart
+        $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
 
-    return $self->get_name;
+        return $new_self;
+    }
+    else {
+        return $orig->( $self );
+    }
 };
 
 =head2 products

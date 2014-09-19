@@ -279,7 +279,7 @@ cmp_ok( $cart->has_errors, '==', 0, "no errors" );
 
 lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
 
-cmp_ok($cart->get_name, 'eq', 'bananas', "cart name is bananas");
+cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
 
 cmp_ok( $cart->has_errors, '==', 1, "cart has errors" );
 
@@ -289,13 +289,13 @@ lives_ok( sub { $cart->replace_hook('before_cart_rename', undef ) },
     "remove hook"
 );
 
-lives_ok { $cart->set_name("not_allowed") } "Change cart name to not_allowed";
+lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
 
 cmp_ok($cart->name, 'eq', 'not_allowed', "cart name is not_allowed");
 
 cmp_ok( $cart->has_errors, '==', 0, "no errors" );
 
-lives_ok { $cart->set_name("main") } "Change cart name to main";
+lives_ok { $cart->name("main") } "Change cart name to main";
 
 cmp_ok($cart->name, 'eq', 'main', "cart name is main");
 
