@@ -31,8 +31,6 @@ use namespace::clean;
 
 Generic cart class for L<Interchange6>.
 
-See L<Interchange6::Role::Costs> for details of cost attributes and methods.
-
 =head1 SYNOPSIS
 
   my $cart = Interchange6::Cart->new();
@@ -101,7 +99,7 @@ around name => sub {
 
 =head2 products
 
-In addition to the standard accessors products has a number of private methods supplied to us via <MooX::HandlesVia> which are documented under L</PRODUCT METHODS> below.
+Called without args returns a hash reference of L<Interchange6::Cart::Product>. Should not normally be called with args but rather via the various L</PRODUCT METHODS> detailed below.
 
 =cut
 
@@ -221,15 +219,11 @@ around clear => sub {
 
 Returns the number of different products in the shopping cart. If you have 5 apples and 6 pears it will return 2 (2 different products).
 
-=head2 get_products
-
-Returns an arrayref of Interchange::Cart::Product(s)
-
 =head2 is_empty
 
 Return boolean 1 or 0 depending on whether the cart is empty or not.
 
-=head2 product_get $index
+=head2 product_get($index)
 
 Returns the product at the specified index;
 
@@ -241,16 +235,13 @@ This method requires a single argument.
 
   my $index = $cart->product_index( sub { $_->sku eq 'ABC' } );
 
-=head2 products
-
-An alias for get_products for backwards compatibility.
-
 =head2 products_array
 
 Returns an array of Interchange::Cart::Product(s)
 
-
 =head1 OTHER METHODS
+
+See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head2 new
 
@@ -260,11 +251,7 @@ Inherited method. Returns a new Cart object.
 
 Add product to the cart. Returns product in case of success.
 
-The product is an L<Interchange6::Cart::Product> or a hash (reference) of product attributes that would be passed to Interchange6::Cart::Product->new(). See L<Interchange6::Cart::Product> for details.
-
-=cut
-
-=head2 add
+The product is an L<Interchange6::Cart::Product> or a hash (reference) of product attributes that would be passed to Interchange6::Cart::Product->new().
 
 =cut
 
@@ -413,9 +400,7 @@ sub quantity {
     my $self = shift;
     my $qty  = 0;
 
-    for my $product ( $self->products_array ) {
-        $qty += $product->quantity;
-    }
+    map { $qty += $_->quantity } $self->products_array;
 
     return $qty;
 }
@@ -515,9 +500,7 @@ sub subtotal {
 
     my $subtotal = 0;
 
-    for my $product ( $self->products_array ) {
-        $subtotal += $product->total;
-    }
+    map { $subtotal += $_->total } $self->products_array;
 
     return $subtotal;
 }
