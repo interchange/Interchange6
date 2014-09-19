@@ -5,9 +5,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use DateTime;
 
-#use Test::Most tests => 118;
 use Test::Most 'die';
 use Test::Warnings qw/warning :no_end_test/;
 
@@ -15,11 +13,7 @@ use Interchange6::Cart;
 use Interchange6::Cart::Product;
 use Interchange6::Hook;
 
-my ( $args, $cart, $product, $ret, $modified, $hook );
-
-# create a DateTime object for later comparison
-
-$modified = DateTime->now;
+my ( $args, $cart, $product, $ret, $hook );
 
 # create a cart and change its name
 
@@ -32,20 +26,6 @@ ok( $cart->name eq 'main', 'Cart name is main' );
 lives_ok { $ret = $cart->name('discount') } "Change cart name";
 cmp_ok( $ret,        'eq', 'discount', "New name was returned" );
 cmp_ok( $cart->name, 'eq', 'discount', "Cart name is discount" );
-
-# created / modified
-
-isa_ok( $cart->created, 'DateTime' );
-cmp_ok( $cart->created, '>=', $modified, "creation time: " . $cart->created );
-
-isa_ok( $cart->last_modified, 'DateTime' );
-cmp_ok( $cart->last_modified, '>=', $modified,
-    "last_modified time: " . $cart->last_modified );
-
-# store last_modified for later
-
-$modified = $cart->last_modified;
-sleep 1;
 
 # Products
 
@@ -70,26 +50,14 @@ cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
 cmp_ok( $cart->is_empty, '==', 0, "cart should not be empty" );
 
-cmp_ok( $cart->last_modified, '>', $modified,
-    "last_modified updated: " . $cart->last_modified );
-
 cmp_ok( $cart->subtotal, '==', 42, "Check subtotal" );
 cmp_ok( $cart->total,    '==', 42, "Check total" );
-
-$modified = $cart->last_modified;
-sleep 1;
 
 lives_ok { $cart->clear } "clear cart";
 
 cmp_ok( $cart->count, '==', 0, "cart count should be zero" );
 
 cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
-
-cmp_ok( $cart->last_modified, '>', $modified,
-    "last_modified updated: " . $cart->last_modified );
-
-$modified = $cart->last_modified;
-sleep 1;
 
 # add has product to cart
 
@@ -107,21 +75,9 @@ cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 lives_ok { $cart->add($args) } "add product hashref to cart again";
 cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-cmp_ok( $cart->last_modified, '>', $modified,
-    "last_modified updated: " . $cart->last_modified );
-
-$modified = $cart->last_modified;
-sleep 1;
-
 lives_ok { $cart->remove('ABC') } "Remove product from cart by sku";
 
 cmp_ok( $cart->is_empty, '==', 1, "cart should be empty" );
-
-cmp_ok( $cart->last_modified, '>', $modified,
-    "last_modified updated: " . $cart->last_modified );
-
-$modified = $cart->last_modified;
-sleep 1;
 
 # do some things with multiple products
 
@@ -166,24 +122,12 @@ cmp_ok( $cart->quantity, '==', 10, "cart quantity is 10" );
 cmp_ok( $cart->subtotal, '==', 199, "cart subtotal is 199" );
 cmp_ok( $cart->total,    '==', 199, "cart total is 199" );
 
-cmp_ok( $cart->last_modified, '>', $modified,
-    "last_modified updated: " . $cart->last_modified );
-
-$modified = $cart->last_modified;
-sleep 1;
-
 # try to add empty and null products;
 
 throws_ok { $cart->add() } qr/Missing required arg/, "try to add undef product";
 
-cmp_ok( $cart->last_modified, '==', $modified,
-    "last_modified unchanged: " . $cart->last_modified );
-
 throws_ok { $cart->add( {} ) } qr/Missing required arg/,
   "try to add empty product";
-
-cmp_ok( $cart->last_modified, '==', $modified,
-    "last_modified unchanged: " . $cart->last_modified );
 
 cmp_ok( $cart->count, '==', 3, "should still have 3 products in cart" );
 

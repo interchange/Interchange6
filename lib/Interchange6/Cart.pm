@@ -51,8 +51,6 @@ See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head1 ATTRIBUTES
 
-Date and time cart was created.
-
 =head2 id
 
 Cart id can be used for subclasses, e.g. primary key value for carts in the database.
@@ -62,30 +60,6 @@ Cart id can be used for subclasses, e.g. primary key value for carts in the data
 has id => (
     is  => 'rw',
     isa => Str,
-);
-
-=head2 created
-
-Returns the time the cart was created as a DateTime object.
-
-=cut
-
-has created => (
-    is      => 'ro',
-    isa     => DateAndTime,
-    default => sub { DateTime->now },
-);
-
-=head2 last_modified
-
-Returns the time the cart was last modified as a DateTime object.
-
-=cut
-
-has last_modified => (
-    is      => 'rwp',
-    isa     => DateAndTime,
-    default => sub { DateTime->now },
 );
 
 =head2 name
@@ -114,8 +88,6 @@ around name => sub {
 
         # fire off the rename
         my $ret = $orig->( $self, @_ );
-
-        $self->_set_last_modified( DateTime->now );
 
         # run hook after renaming the cart
         $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
@@ -244,8 +216,6 @@ around clear => sub {
 
     # fire off the clear
     $orig->( $self, @_ );
-
-    $self->_set_last_modified( DateTime->now );
 
     # run hook after clearing the cart
     $self->execute_hook( 'after_cart_clear', $self );
@@ -378,8 +348,6 @@ sub add {
     # final hook
     $self->execute_hook( 'after_cart_add', $self, $product, $update );
 
-    $self->_set_last_modified( DateTime->now );
-
     return $product;
 }
 
@@ -486,11 +454,6 @@ sub remove {
 
         # remove product from our array
         $self->_delete($index);
-
-        # reset totals & modified before calling hook
-        #$self->clear_subtotal;
-        #$self->clear_total;
-        $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_remove', $self, $product );
         return if $self->has_error;
@@ -616,10 +579,6 @@ sub update {
         next ARGS if $self->has_error;
 
         $product->quantity($qty);
-
-        #$self->clear_subtotal;
-        #$self->clear_total;
-        $self->_set_last_modified( DateTime->now );
 
         $self->execute_hook( 'after_cart_update', $self, $product, $update );
     }
