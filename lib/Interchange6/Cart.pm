@@ -49,10 +49,6 @@ See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
   my $total = $cart->total;
 
-=cut
-
-use constant CART_DEFAULT => 'main';
-
 =head1 ATTRIBUTES
 
 Date and time cart was created.
@@ -101,7 +97,7 @@ The cart name. Default is 'main'.
 has name => (
     is       => 'rw',
     isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
-    default  => CART_DEFAULT,
+    default  => 'main',
     required => 1,
 );
 
