@@ -121,14 +121,8 @@ has products => (
         _product_push  => 'push',
         _product_set   => 'set',
     },
-    reader   => 'get_products',
     init_arg => undef,
 );
-
-sub products {
-    my $self = shift;
-    return $self->get_products;
-}
 
 =head2 sessions_id
 

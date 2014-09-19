@@ -85,7 +85,7 @@ lives_ok { $cart->add($args) } "add product hashref to cart";
 
 cmp_ok( $cart->count, '==', 1, "should have one product in cart" );
 
-cmp_ok( $cart->get_products->[0]->quantity, '==', 1, "product quantity is 1" );
+cmp_ok( $cart->products->[0]->quantity, '==', 1, "product quantity is 1" );
 
 lives_ok { $cart->add($args) } "add same product hashref to cart";
 
