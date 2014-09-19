@@ -118,14 +118,14 @@ around name => sub {
         return if $self->has_error;
 
         # fire off the rename
-        my $new_self = $orig->( $self, @_ );
+        my $ret = $orig->( $self, @_ );
 
         $self->_set_last_modified( DateTime->now );
 
         # run hook after clearing the cart
         $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
 
-        return $new_self;
+        return $ret;
     }
     else {
         return $orig->( $self );
@@ -170,38 +170,30 @@ The session ID for the cart.
 =cut
 
 has sessions_id => (
-    is      => 'rwp',
-    isa     => Str,
+    is      => 'rw',
     clearer => 1,
-    reader  => 'get_sessions_id',
-    writer  => '_set_sessions_id',
 );
 
-sub sessions_id {
-    my ( $self, $sessions_id ) = @_;
+around sessions_id => sub {
+    my ( $orig, $self ) = ( shift, shift );
 
-    if ( @_ > 1 ) {
+    if ( @_ > 0 ) {
 
-        # set sessions_id for the cart
-        my %data = ( sessions_id => $sessions_id );
+        my %data = ( sessions_id => $_[0] );
 
         $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
         return if $self->has_error;
 
-        if ( defined $sessions_id ) {
-            $self->_set_sessions_id($sessions_id);
-        }
-        else {
-            # magic undef used on logout to prevent cart contents from
-            # beging deleted on session->destroy
-            $self->clear_sessions_id;
-        }
+        my $ret = $orig->( $self, @_ );
 
         $self->execute_hook( 'after_cart_set_sessions_id', $self, \%data );
-    }
 
-    return $self->get_sessions_id;
-}
+        return $ret;
+    }
+    else {
+        return $orig->( $self );
+    }
+};
 
 =head2 users_id
 
