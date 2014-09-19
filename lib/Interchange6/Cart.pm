@@ -21,9 +21,8 @@ use MooX::HandlesVia;
 use Interchange6::Types;
 use Interchange6::Hook;
 
-with 'Interchange6::Role::Costs';
-with 'Interchange6::Role::Errors';
-with 'Interchange6::Role::Hookable';
+with 'Interchange6::Role::Costs', 'Interchange6::Role::Errors',
+  'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
@@ -93,7 +92,7 @@ around name => sub {
         return $ret;
     }
     else {
-        return $orig->( $self );
+        return $orig->($self);
     }
 };
 
@@ -151,7 +150,7 @@ around sessions_id => sub {
         return $ret;
     }
     else {
-        return $orig->( $self );
+        return $orig->($self);
     }
 };
 
@@ -162,8 +161,8 @@ The user id of the logged in user.
 =cut
 
 has users_id => (
-    is     => 'rw',
-    isa    => Str,
+    is  => 'rw',
+    isa => Str,
 );
 
 around users_id => sub {
@@ -185,7 +184,7 @@ around users_id => sub {
         return $ret;
     }
     else {
-        return $orig->( $self );
+        return $orig->($self);
     }
 };
 
@@ -483,7 +482,6 @@ sub seed {
 
     return $self->products;
 }
-
 
 =head2 subtotal
 
