@@ -109,7 +109,6 @@ around name => sub {
         my $old_name = $self->name;
 
         $self->clear_error;
-        # run hook before renaming the cart
         $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
         return if $self->has_error;
 
@@ -118,7 +117,7 @@ around name => sub {
 
         $self->_set_last_modified( DateTime->now );
 
-        # run hook after clearing the cart
+        # run hook after renaming the cart
         $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
 
         return $ret;
@@ -177,6 +176,7 @@ around sessions_id => sub {
 
         my %data = ( sessions_id => $_[0] );
 
+        $self->clear_error;
         $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
         return if $self->has_error;
 
@@ -198,30 +198,32 @@ The user id of the logged in user.
 =cut
 
 has users_id => (
-    is     => 'rwp',
+    is     => 'rw',
     isa    => Str,
-    reader => 'get_users_id',
-    writer => '_set_users_id',
 );
 
-sub users_id {
-    my ( $self, $users_id ) = @_;
+around users_id => sub {
+    my ( $orig, $self ) = ( shift, shift );
 
-    if ( @_ > 1 ) {
+    if ( @_ > 0 ) {
 
         # set users_id for the cart
-        my %data = ( users_id => $users_id );
+        my %data = ( users_id => $_[0] );
 
+        $self->clear_error;
         $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
         return if $self->has_error;
 
-        $self->_set_users_id($users_id);
+        my $ret = $orig->( $self, @_ );
 
         $self->execute_hook( 'after_cart_set_users_id', $self, \%data );
-    }
 
-    return $self->get_users_id;
-}
+        return $ret;
+    }
+    else {
+        return $orig->( $self );
+    }
+};
 
 =head1 PRODUCT METHODS
 
