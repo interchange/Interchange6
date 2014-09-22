@@ -183,6 +183,8 @@ lives_ok( sub { $product2 = $cart->add($product2) }, "Add 3 x product DEF to car
 ok( !$product2->has_price, "product price is not set" );
 ok( !$product2->has_subtotal, "product subtotal is not set" );
 ok( !$product2->has_total, "product total is not set" );
+ok( !$cart->has_subtotal, "cart subtotal is not set" );
+ok( !$cart->has_total, "cart total is not set" );
 cmp_ok( $product2->price, '==', 32.34, "product price is 32.34" );
 cmp_ok( $product2->subtotal, '==', 97.02, "product subtotal is 97.02" );
 cmp_ok( $product2->total, '==', 97.02, "product total is 97.02" );

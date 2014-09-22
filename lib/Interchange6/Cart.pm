@@ -75,6 +75,8 @@ after discount_percent => sub {
     my $self = shift;
     map { $_->clear_price; $_->clear_subtotal; $_->clear_total }
       $self->products_array;
+    $self->clear_subtotal;
+    $self->clear_total;
 };
 
 =head2 name
@@ -172,6 +174,48 @@ around sessions_id => sub {
     }
 };
 
+=head2 subtotal
+
+Returns current cart subtotal excluding costs.
+
+=cut
+
+has subtotal => (
+    is        => 'lazy',
+    clearer   => 1,
+    predicate => 1,
+);
+
+sub _build_subtotal {
+    my $self = shift;
+
+    my $subtotal = 0;
+
+    map { $subtotal += $_->total } $self->products_array;
+
+    return $subtotal;
+}
+
+=head2 total
+
+Returns current cart total including costs.
+
+=cut
+
+has total => (
+    is        => 'lazy',
+    clearer   => 1,
+    predicate => 1,
+);
+
+sub _build_total {
+    my $self = shift;
+
+    my $subtotal = $self->subtotal;
+
+    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
+}
+
 =head2 users_id
 
 The user id of the logged in user.
@@ -225,6 +269,8 @@ around clear => sub {
 
     # fire off the clear
     $orig->( $self, @_ );
+    $self->clear_subtotal;
+    $self->clear_total;
 
     # run hook after clearing the cart
     $self->execute_hook( 'after_cart_clear', $self );
@@ -344,6 +390,9 @@ sub add {
         $self->_product_push($product);
     }
 
+    $self->clear_subtotal;
+    $self->clear_total;
+
     # final hook
     $self->execute_hook( 'after_cart_add', $self, $product, $update );
 
@@ -451,6 +500,8 @@ sub remove {
 
         # remove product from our array
         $self->_delete($index);
+        $self->clear_subtotal;
+        $self->clear_total;
 
         $self->execute_hook( 'after_cart_remove', $self, $product );
         return if $self->has_error;
@@ -498,42 +549,10 @@ sub seed {
     }
     push( @errors, $self->error ) if $self->has_error;
     $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
+    $self->clear_subtotal;
+    $self->clear_total;
 
     return $self->products;
-}
-
-=head2 subtotal
-
-Returns current cart subtotal excluding costs.
-
-=head2 total
-
-Returns current cart total including costs.
-
-=cut
-
-sub subtotal {
-    my $self = shift;
-
-    my $subtotal = 0;
-
-    map { $subtotal += $_->total } $self->products_array;
-
-    return $subtotal;
-}
-
-=head2 total
-
-Returns current cart total including costs.
-
-=cut
-
-sub total {
-    my $self = shift;
-
-    my $subtotal = $self->subtotal;
-
-    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
 }
 
 =head2 update
@@ -590,9 +609,24 @@ sub update {
 
         $self->execute_hook( 'after_cart_update', $self, $product, $update );
     }
+    $self->clear_subtotal;
+    $self->clear_total;
     push( @errors, $self->error ) if $self->has_error;
     $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 }
+
+# after cost changes we need to clear the total
+
+after apply_cost => sub {
+    my $self = shift;
+    $self->clear_subtotal;
+    $self->clear_total;
+};
+after clear_costs => sub {
+    my $self = shift;
+    $self->clear_subtotal;
+    $self->clear_total;
+};
 
 =head1 HOOKS
 

@@ -41,7 +41,8 @@ A reference to the Cart object that this Cart::Product belongs to.
 =cut
 
 has cart => (
-    is => 'rw',
+    is        => 'rw',
+    default   => undef,
 );
 
 =head2 discount
@@ -70,6 +71,10 @@ after discount => sub {
         $self->clear_price;
         $self->clear_subtotal;
         $self->clear_total;
+        if ( $self->cart ) {
+            $self->cart->clear_subtotal;
+            $self->cart->clear_total;
+        }
     }
 };
 
@@ -98,6 +103,10 @@ after discount_percent => sub {
         $self->clear_price;
         $self->clear_subtotal;
         $self->clear_total;
+        if ( $self->cart ) {
+            $self->cart->clear_subtotal;
+            $self->cart->clear_total;
+        }
     }
 };
 
@@ -302,11 +311,19 @@ predicate on L</total>.
 after apply_cost => sub {
     my $self = shift;
     $self->clear_total;
+    if ( $self->cart ) {
+        $self->cart->clear_subtotal;
+        $self->cart->clear_total;
+    }
 };
 
 after clear_costs => sub {
     my $self = shift;
     $self->clear_total;
+    if ( $self->cart ) {
+        $self->cart->clear_subtotal;
+        $self->cart->clear_total;
+    }
 };
 
 1;
