@@ -454,6 +454,14 @@ sub find {
     return undef;
 }
 
+=head2 has_subtotal
+
+predicate on L</subtotal>.
+
+=head2 has_total
+
+predicate on L</total>.
+
 =head2 quantity
 
 Returns the sum of the quantity of all products in the shopping cart,
