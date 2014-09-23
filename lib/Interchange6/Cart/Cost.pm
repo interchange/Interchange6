@@ -20,13 +20,13 @@ Cart cost class for L<Interchange6>.
 
 =over 4
 
-=item * cart_costs_id
+=item * id
 
-Can be used by subclasses to tie cart cost to L<Interchange6::Schema::Result::CartCost>.
+Cart id can be used for subclasses, e.g. primary key value for cart or product costs in the database.
 
 =cut
 
-has cart_costs_id => (
+has id => (
     is => 'ro',
     isa => Int,
 );
