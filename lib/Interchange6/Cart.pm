@@ -59,26 +59,6 @@ has id => (
     isa => Str,
 );
 
-=head2 discount_percent
-
-Cart-wide discount percentage applied to each product in the cart after any product discounts and before product costs.
-
-=cut
-
-has discount_percent => (
-    is      => 'rw',
-    isa     => Num,
-    default => 0,
-);
-
-after discount_percent => sub {
-    my $self = shift;
-    map { $_->clear_price; $_->clear_subtotal; $_->clear_total }
-      $self->products_array;
-    $self->clear_subtotal;
-    $self->clear_total;
-};
-
 =head2 name
 
 The cart name. Default is 'main'.
