@@ -79,9 +79,7 @@ around name => sub {
 
         my $old_name = $self->name;
 
-        $self->clear_error;
         $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
-        return if $self->has_error;
 
         # fire off the rename
         my $ret = $orig->( $self, @_ );
@@ -139,9 +137,7 @@ around sessions_id => sub {
 
         my %data = ( sessions_id => $_[0] );
 
-        $self->clear_error;
         $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
-        return if $self->has_error;
 
         my $ret = $orig->( $self, @_ );
 
@@ -215,9 +211,7 @@ around users_id => sub {
         # set users_id for the cart
         my %data = ( users_id => $_[0] );
 
-        $self->clear_error;
         $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
-        return if $self->has_error;
 
         my $ret = $orig->( $self, @_ );
 
@@ -241,11 +235,8 @@ Removes all products from the cart.
 around clear => sub {
     my ( $orig, $self ) = ( shift, shift );
 
-    $self->clear_error;
-
     # run hook before clearing the cart
     $self->execute_hook( 'before_cart_clear', $self );
-    return if $self->has_error;
 
     # fire off the clear
     $orig->( $self, @_ );
@@ -303,8 +294,6 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
-    $self->clear_error;
-
     if ( blessed($product) ) {
         die "product argument is not an Interchange6::Cart::Product"
           unless ( $product->isa('Interchange6::Cart::Product') );
@@ -328,22 +317,19 @@ sub add {
         # run hooks before validating product
 
         $self->execute_hook( 'before_cart_add_validate', $self, \%args );
-        return if $self->has_error;
 
         $product = 'Interchange6::Cart::Product'->new(%args);
 
         unless ( blessed($product)
             && $product->isa('Interchange6::Cart::Product') )
         {
-            $self->set_error("failed to create product.");
-            return;
+            die "failed to create product.";
         }
     }
 
     # $product is now an Interchange6::Cart::Product so run hook
 
     $self->execute_hook( 'before_cart_add', $self, $product );
-    return if $self->has_error;
 
    # cart may already contain an product with the same sku
    # if so then we add quantity to existing product otherwise we add new product
@@ -388,7 +374,7 @@ This binds a coderef to an installed hook.
       code => sub {
           my ( $cart, $product ) = @_;
           if ( $product->sku eq '123' ) {
-              $cart->set_error('Product not removed due to hook.');
+              die 'Product not removed due to hook.';
           }
       }
   )
@@ -470,11 +456,8 @@ sub remove {
     my ( $self, $arg ) = @_;
     my ( $index, $product );
 
-    $self->clear_error unless caller eq __PACKAGE__;
-
     # run hook before locating product
     $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
-    return if $self->has_error;
 
     $index = $self->product_index( sub { $_->sku eq $arg } );
 
@@ -484,7 +467,6 @@ sub remove {
         $product = $self->product_get($index);
 
         $self->execute_hook( 'before_cart_remove', $self, $product );
-        return if $self->has_error;
 
         # remove product from our array
         $self->_delete($index);
@@ -492,14 +474,12 @@ sub remove {
         $self->clear_total;
 
         $self->execute_hook( 'after_cart_remove', $self, $product );
-        return if $self->has_error;
 
         return 1;
     }
 
     # product missing
-    $self->set_error("Product not found in cart: $arg.");
-    return;
+    die "Product not found in cart: $arg.";
 }
 
 =head2 seed $product_ref
@@ -518,25 +498,21 @@ B<NOTE:> use with caution since any existing products in the cart will be lost a
 
 sub seed {
     my ( $self, $product_ref ) = @_;
-    my ( $args, $product, @errors );
+    my ( $args, $product );
 
   PRODUCT: for $args ( @{ $product_ref || [] } ) {
-
-        # stash any existing error
-        push( @errors, $self->error ) if $self->has_error;
 
         $product = Interchange6::Cart::Product->new($args);
         unless ( blessed($product)
             && $product->isa('Interchange6::Cart::Product') )
         {
-            $self->set_error("failed to create product.");
-            next PRODUCT;
+            $self->clear_subtotal;
+            $self->clear_total;
+            die "failed to create product.";
         }
 
         $self->_product_push($product);
     }
-    push( @errors, $self->error ) if $self->has_error;
-    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
     $self->clear_subtotal;
     $self->clear_total;
 
@@ -562,20 +538,14 @@ of the update hooks.
 
 sub update {
     my ( $self, @args ) = @_;
-    my ( $sku, $qty, $product, $update, @errors );
-
-    $self->clear_error;
+    my ( $sku, $qty, $product, $update );
 
   ARGS: while ( @args > 0 ) {
         $sku = shift @args;
         $qty = shift @args;
 
-        # stash any existing error
-        push( @errors, $self->error ) if $self->has_error;
-
         unless ( $product = $self->find($sku) ) {
-            $self->set_error("Product for $sku not found in cart.");
-            next ARGS;
+            die "Product for $sku not found in cart.";
         }
 
         if ( $qty == 0 ) {
@@ -591,7 +561,6 @@ sub update {
         $update = { quantity => $qty };
 
         $self->execute_hook( 'before_cart_update', $self, $product, $update );
-        next ARGS if $self->has_error;
 
         $product->quantity($qty);
 
@@ -599,8 +568,6 @@ sub update {
     }
     $self->clear_subtotal;
     $self->clear_total;
-    push( @errors, $self->error ) if $self->has_error;
-    $self->set_error( join( ":", @errors ) ) if scalar(@errors) > 1;
 }
 
 # after cost changes we need to clear the total
