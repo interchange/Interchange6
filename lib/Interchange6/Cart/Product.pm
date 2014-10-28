@@ -105,9 +105,10 @@ has quantity => (
 around quantity => sub {
     my ( $orig, $self ) = ( shift, shift );
 
-    my $old_quantity = $self->quantity;
-
     if ( @_ > 0 ) {
+
+        my $old_quantity = $self->quantity;
+
         # pass old and new quantity to hook
         $self->execute_hook( 'before_cart_product_set_quantity',
             $self, $old_quantity, $_[0] );
