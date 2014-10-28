@@ -45,71 +45,6 @@ has cart => (
     default   => undef,
 );
 
-=head2 discount
-
-Discount actual amount in currency for quantity 1 of product. On set this will also update L</discount_percent> to match. Defaults to 0.
-
-=cut
-
-has discount => (
-    is        => 'rw',
-    isa       => Num,
-    default   => 0,
-);
-
-sub _calculate_discount {
-    my $self = shift;
-    return sprintf( "%.2f",
-        $self->original_price * $self->discount_percent / 100 )
-}
-
-after discount => sub {
-    my ( $self, $value ) = @_;
-    if ( defined $value ) {
-        # FIXME: nasty avoidance of deep recursion
-        $self->{discount_percent} = $self->_calculate_discount_percent;
-        $self->clear_price;
-        $self->clear_subtotal;
-        $self->clear_total;
-        if ( $self->cart ) {
-            $self->cart->clear_subtotal;
-            $self->cart->clear_total;
-        }
-    }
-};
-
-=head2 discount_percent
-
-Discount amount in percent for quantity 1 of product. On set this will also update L</discount> to match. Defaults to 0.
-
-=cut
-
-has discount_percent => (
-    is        => 'rw',
-    isa       => Num,
-    default   => 0,
-);
-
-sub _calculate_discount_percent {
-    my $self = shift;
-    return sprintf( "%.2f", $self->discount / $self->original_price * 100 );
-}
-
-after discount_percent => sub {
-    my ( $self, $value ) = @_;
-    if ( defined $value ) {
-        # FIXME: nasty avoidance of deep recursion
-        $self->{discount} = $self->_calculate_discount;
-        $self->clear_price;
-        $self->clear_subtotal;
-        $self->clear_total;
-        if ( $self->cart ) {
-            $self->cart->clear_subtotal;
-            $self->cart->clear_total;
-        }
-    }
-};
-
 =head2 name
 
 Product name is required.
@@ -122,17 +57,6 @@ has name => (
     required => 1,
 );
 
-=head2 original_price
-
-This is the product price B<before> any discount is applied. This attribute is set to the price that the product was created with. It is not possible to change the value of this attribute. The value of L</original_price> is set automatically and should not be set on object creation.
-
-=cut
-
-has original_price => (
-    is  => 'rwp',
-    isa => PositiveNum,
-);
-
 =head2 price
 
 Product price is required and a positive number.
@@ -142,27 +66,27 @@ Price is required, because you want to maintain the price that was valid at the 
 =cut
 
 has price => (
-    is        => 'rwp',
+    is        => 'ro',
     isa       => PositiveNum,
-    clearer   => 1,
-    lazy      => 1,
-    builder   => 1,
     required  => 1,
-    predicate => 1,
 );
 
-sub _build_price {
+=head2 selling_price
+
+Selling price is the price after group pricing, tier pricing or promotional discounts have been applied. If it is not set then it defaults to L</price>.
+
+=cut
+
+has selling_price => (
+    is        => 'rw',
+    isa       => PositiveNum,
+    builder   => 1,
+    lazy      => 1,
+);
+
+sub _build_selling_price {
     my $self = shift;
-    my $price = $self->original_price - $self->discount;
-    if ( $self->cart ) {
-        # already added to cart
-        my $cart_discount = $price * $self->cart->discount_percent / 100;
-        return sprintf( "%.2f", $price - $cart_discount );
-    }
-    else {
-        # not in cart yet
-        return $price;
-    }
+    return $self->price;
 }
 
 =head2 quantity
@@ -205,7 +129,7 @@ has subtotal => (
 
 sub _build_subtotal {
     my $self = shift;
-    return sprintf( "%.2f", $self->price * $self->quantity);
+    return sprintf( "%.2f", $self->selling_price * $self->quantity);
 }
 
 =head2 total
@@ -240,61 +164,13 @@ has uri => (
 
 =head1 METHODS
 
-=head2 BUILDARGS
+=head2 clear_subtotal
 
-Check for illegal setting of both L</discount> and L</discount_percent>.
+Clears L</subtotal>.
 
-Check for illegal setting of L</original_price>.
+=head2 clear_total
 
-=cut
-
-sub BUILDARGS {
-    my $self = shift;
-    my %attrs;
-
-    die "Missing required args" unless @_ > 0;
-
-    if ( @_ > 1 ) {
-        %attrs = @_;
-    }
-    else {
-        %attrs = %{$_[0]};
-    }
-
-    die "Missing required arguments: price" unless exists $attrs{price};
-
-    die "Do not pass original_price to builder - use price instead"
-      if defined $attrs{original_price};
-
-    die "Cannot mix discount and discount_percent"
-      if ( defined $attrs{discount} && defined $attrs{discount_percent} );
-
-    return \%attrs;
-}
-
-=head2 BUILD
-
-Set L</original_price> to supplied value of L</price> and apply discount if either L</discount> or L</discount_percent> is supplied to create new L</price>.
-
-=cut
-
-sub BUILD {
-    my $self = shift;
-
-    $self->_set_original_price( $self->price );
-
-    if ( $self->discount ) {
-        $self->discount_percent($self->_calculate_discount_percent);
-    }
-    elsif ( $self->discount_percent ) {
-        $self->discount($self->_calculate_discount);
-    }
-    $self->clear_price;
-}
-
-=head2 has_price
-
-predicate on L</price>.
+Clears L</total>.
 
 =head2 has_subtotal
 
@@ -312,7 +188,6 @@ after apply_cost => sub {
     my $self = shift;
     $self->clear_total;
     if ( $self->cart ) {
-        $self->cart->clear_subtotal;
         $self->cart->clear_total;
     }
 };
@@ -321,7 +196,6 @@ after clear_costs => sub {
     my $self = shift;
     $self->clear_total;
     if ( $self->cart ) {
-        $self->cart->clear_subtotal;
         $self->cart->clear_total;
     }
 };
