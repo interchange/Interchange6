@@ -5,7 +5,8 @@ package Interchange6::Cart::Product;
 use strict;
 use Moo;
 use Interchange6::Types;
-with 'Interchange6::Role::Costs';
+use Interchange6::Hook;
+with 'Interchange6::Role::Costs', 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 

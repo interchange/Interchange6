@@ -21,8 +21,7 @@ use MooX::HandlesVia;
 use Interchange6::Types;
 use Interchange6::Hook;
 
-with 'Interchange6::Role::Costs', 'Interchange6::Role::Errors',
-  'Interchange6::Role::Hookable';
+with 'Interchange6::Role::Costs', 'Interchange6::Role::Hookable';
 
 use namespace::clean;
 
