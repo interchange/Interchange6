@@ -102,6 +102,29 @@ has quantity => (
     default => 1,
 );
 
+around quantity => sub {
+    my ( $orig, $self ) = ( shift, shift );
+
+    my $old_quantity = $self->quantity;
+
+    if ( @_ > 0 ) {
+        # pass old and new quantity to hook
+        $self->execute_hook( 'before_cart_product_set_quantity',
+            $self, $old_quantity, $_[0] );
+
+        # fire off quantity change
+        my $ret = $orig->( $self, @_ );
+
+        $self->execute_hook( 'after_cart_product_set_quantity',
+            $self, $old_quantity, $_[0] );
+       
+        return $ret;
+    }
+    else {
+        return $orig->($self);
+    }
+};
+
 =head2 sku
 
 Unique product identifier is required.

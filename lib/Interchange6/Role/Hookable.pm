@@ -86,6 +86,8 @@ sub supported_hooks {
       after_cart_set_sessions_id
       before_cart_rename
       after_cart_rename
+      before_cart_product_set_quantity
+      after_cart_product_set_quantity
       /;
 }
 
