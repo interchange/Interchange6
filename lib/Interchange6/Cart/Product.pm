@@ -207,12 +207,13 @@ predicate on L</total>.
 
 =cut
 
-# after cost changes we need to clear the total
+# after cost changes we need to clear the total as well as cart subtotal/total
 
 after apply_cost => sub {
     my $self = shift;
     $self->clear_total;
     if ( $self->cart ) {
+        $self->cart->clear_subtotal;
         $self->cart->clear_total;
     }
 };
@@ -221,6 +222,7 @@ after clear_costs => sub {
     my $self = shift;
     $self->clear_total;
     if ( $self->cart ) {
+        $self->cart->clear_subtotal;
         $self->cart->clear_total;
     }
 };

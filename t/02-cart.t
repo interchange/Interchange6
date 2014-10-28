@@ -171,8 +171,7 @@ lives_ok ( sub {
     $hook = Interchange6::Hook->new(
         name => 'before_cart_clear',
         code => sub {
-            my $cart = shift;
-            $cart->set_error('some failure');
+            die 'some failure';
         }
     );
 },
@@ -180,11 +179,9 @@ lives_ok ( sub {
 
 lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 
-lives_ok( sub { $cart->clear }, "cart clear" );
+throws_ok( sub { $cart->clear }, qr/some failure/, "cart clear" );
 
 cmp_ok( $cart->count, '==', 1, "still 1 product in cart" );
-
-ok($cart->has_error, "Cart has an error");
 
 lives_ok( sub { $cart->replace_hook('before_cart_clear', undef ) },
     "remove hook"
@@ -193,8 +190,6 @@ lives_ok( sub { $cart->replace_hook('before_cart_clear', undef ) },
 lives_ok( sub { $cart->clear }, "cart clear" );
 
 cmp_ok( $cart->count, '==', 0, "0 products in cart" );
-
-is($cart->has_error, 0, "Cart has no errors");
 
 # before_cart_rename hook
 
@@ -206,7 +201,7 @@ lives_ok {
         code => sub {
             my ($cart, $old_name, $new_name) = @_;
             if ( $new_name eq 'not_allowed' ) {
-                $cart->set_error('Cart rename failed due to hook');
+                die 'Cart rename failed due to hook';
             }
         }
     );
@@ -219,15 +214,13 @@ lives_ok { $cart->name("bananas") } "Change cart name to bananas";
 
 cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
 
-cmp_ok( $cart->has_errors, '==', 0, "no errors" );
-
-lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
+throws_ok(
+    sub { $cart->name("not_allowed") },
+    qr/Cart rename failed due to hook/,
+    "Change cart name to not_allowed"
+);
 
 cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
-
-cmp_ok( $cart->has_errors, '==', 1, "cart has errors" );
-
-cmp_ok($cart->error, 'eq','Cart rename failed due to hook', "error looks good");
 
 lives_ok( sub { $cart->replace_hook('before_cart_rename', undef ) },
     "remove hook"
@@ -236,8 +229,6 @@ lives_ok( sub { $cart->replace_hook('before_cart_rename', undef ) },
 lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
 
 cmp_ok($cart->name, 'eq', 'not_allowed', "cart name is not_allowed");
-
-cmp_ok( $cart->has_errors, '==', 0, "no errors" );
 
 lives_ok { $cart->name("main") } "Change cart name to main";
 
@@ -249,8 +240,7 @@ lives_ok( sub {
     $hook = Interchange6::Hook->new(
         name => 'before_cart_add_validate',
         code => sub {
-            my $cart = shift;
-            $cart->set_error('general error');
+            die 'general error';
         }
     );
 },
@@ -259,11 +249,7 @@ lives_ok( sub {
 lives_ok( sub { $cart->add_hook($hook) }, "Add the hook to the cart" );
 
 $product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
-lives_ok ( sub { $cart->add($product) }, "Hooked");
-
-cmp_ok( $cart->has_error, '==', 1, "We have an error" );
-
-cmp_ok( $cart->error, 'eq', 'general error', "Error is: " . $cart->error );
+throws_ok ( sub { $cart->add($product) }, qr/general error/, "Hooked");
 
 lives_ok( sub { $cart->replace_hook('before_cart_add_validate', undef ) },
     "remove hook"
@@ -277,7 +263,7 @@ lives_ok {
         code => sub {
             my ( $cart, $product ) = @_;
             if ( $product->price > 3 ) {
-                $cart->set_error('Product not added due to hook.');
+                die 'Product not added due to hook.';
             }
         }
     );
@@ -289,20 +275,14 @@ lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
 $product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
 lives_ok { $cart->add($product) } "add product with price = 3";
 
-cmp_ok( $cart->has_error, '==', 0, "No error" );
-
 cmp_ok( $cart->count, '==', 1, "1 product in cart" );
 
 $product = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
 
-lives_ok { $cart->add($product) } "add product with price = 3.34";
-
-cmp_ok( $cart->has_error, '==', 1, "We have an error" );
-
-cmp_ok(
-    $cart->error, 'eq',
-    'Product not added due to hook.',
-    "Error is: " . $cart->error
+throws_ok(
+    sub { $cart->add($product) },
+    qr/Product not added due to hook/,
+    "add product with price = 3.34"
 );
 
 # Seed

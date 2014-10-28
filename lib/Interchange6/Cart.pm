@@ -168,7 +168,7 @@ sub _build_subtotal {
 
     map { $subtotal += $_->total } $self->products_array;
 
-    return $subtotal;
+    return sprintf( "%.2f", $subtotal );
 }
 
 =head2 total
