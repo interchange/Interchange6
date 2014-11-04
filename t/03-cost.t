@@ -129,7 +129,15 @@ ok( $ret == 11, "Cost: $ret" );
 $ret = $cart->cost('megatax');
 ok( $ret == 11, "Cost: $ret" );
 
+lives_ok( sub { $cart->apply_cost(amount => 12.34, name => 'shipping') },
+    "add 12.34 shipping" );
+lives_ok( sub { $cart->apply_cost(amount => 0, name => 'handling') },
+    "add zero cost handling" );
+cmp_ok( $cart->cost('shipping'), '==', 12.34, "shipping cost is 12.34" );
+cmp_ok( $cart->cost('handling'), '==', 0, "handling cost is 0" );
+
 $cart->clear;
+$cart->clear_costs;
 
 # product costs...
 
