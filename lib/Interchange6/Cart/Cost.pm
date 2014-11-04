@@ -102,9 +102,9 @@ has amount => (
     required => 1,
 );
 
-=item * absolute_amount
+=item * current_amount
 
-Calculated absolute amount of cost. Unless L</relative> is true this will be the same as L</amount>. If L</relative> is true then this is value is recalulated whenever C<total> is called on the object.
+Calculated current amount of cost. Unless L</relative> is true this will be the same as L</amount>. If L</relative> is true then this is value is recalulated whenever C<total> is called on the object.
 
 =cut
 
