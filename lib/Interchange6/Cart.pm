@@ -644,14 +644,6 @@ Receives: $cart, $product
 
 =item after_cart_rename
 
-=item before_cart_product_set_quantity
-
-Receives: $product, $old_quantity, $new_quantity
-
-=item after_cart_product_set_quantity
-
-Receives: $product, $old_quantity, $new_quantity
-
 =back
 
 =head1 AUTHORS
