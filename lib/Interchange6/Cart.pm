@@ -293,6 +293,7 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
+        print STDERR "AAAAAAAAA\n";
     if ( blessed($product) ) {
         die "product argument is not an Interchange6::Cart::Product"
           unless ( $product->isa('Interchange6::Cart::Product') );
@@ -313,22 +314,14 @@ sub add {
             %args = @_;
         }
 
-        # run hooks before validating product
-
-        $self->execute_hook( 'before_cart_add_validate', $self, \%args );
-
         $product = 'Interchange6::Cart::Product'->new(%args);
 
         unless ( blessed($product)
             && $product->isa('Interchange6::Cart::Product') )
         {
-            die "failed to create product.";
+            die "failed to create cart product.";
         }
     }
-
-    # $product is now an Interchange6::Cart::Product so run hook
-
-    $self->execute_hook( 'before_cart_add', $self, $product );
 
    # cart may already contain an product with the same sku
    # if so then we add quantity to existing product otherwise we add new product
@@ -357,9 +350,6 @@ sub add {
 
     $self->clear_subtotal;
     $self->clear_total;
-
-    # final hook
-    $self->execute_hook( 'after_cart_add', $self, $product, $update );
 
     return $product;
 }
