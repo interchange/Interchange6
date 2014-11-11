@@ -19,17 +19,6 @@ my $defs = [
         message => sub { "The value `$_[0]' is not a DateTime object." },
     },
     {
-        name => 'Hook',
-        test => sub {
-            return
-                 $_[0]
-              && blessed( $_[0] )
-              && ref( $_[0] ) eq 'Interchange6::Hook';
-        },
-        message =>
-          sub { "The value `$_[0]' is not a Interchange6::Hook object." },
-    },
-    {
         name    => 'NotEmpty',
         test    => sub { $_[0] =~ /\S/ },
         message => sub { "Must contain some non-space characters." }
@@ -46,6 +35,12 @@ my $defs = [
         name => 'PositiveNum',
         test => sub { defined($_[0]) && $_[0] =~ /^(\d+)(\.\d+)?$/ && $_[0] > 0 },
         message => sub { "is not a positive numeric." }
+    },
+    {
+        name => 'Zero',
+        test =>
+          sub { defined( $_[0] ) && $_[0] =~ /^(\d+)(\.\d+)?$/ && $_[0] == 0 },
+        message => sub { "is not zero." }
     },
 ];
 

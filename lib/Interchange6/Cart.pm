@@ -19,9 +19,8 @@ use Moo;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
 use Interchange6::Types;
-use Interchange6::Hook;
 
-with 'Interchange6::Role::Costs', 'Interchange6::Role::Hookable';
+with 'Interchange6::Role::Costs';
 
 use namespace::clean;
 
@@ -65,33 +64,11 @@ The cart name. Default is 'main'.
 =cut
 
 has name => (
-    is       => 'rw',
+    is       => 'ro',
     isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
     default  => 'main',
-    required => 1,
+    writer   => 'rename',
 );
-
-around name => sub {
-    my ( $orig, $self ) = ( shift, shift );
-
-    if ( @_ > 0 ) {
-
-        my $old_name = $self->name;
-
-        $self->execute_hook( 'before_cart_rename', $self, $old_name, $_[0] );
-
-        # fire off the rename
-        my $ret = $orig->( $self, @_ );
-
-        # run hook after renaming the cart
-        $self->execute_hook( 'after_cart_rename', $self, $old_name, $_[0] );
-
-        return $ret;
-    }
-    else {
-        return $orig->($self);
-    }
-};
 
 =head2 products
 
@@ -125,29 +102,10 @@ The session ID for the cart.
 =cut
 
 has sessions_id => (
-    is      => 'rw',
+    is      => 'ro',
     clearer => 1,
+    writer  => 'set_sessions_id',
 );
-
-around sessions_id => sub {
-    my ( $orig, $self ) = ( shift, shift );
-
-    if ( @_ > 0 ) {
-
-        my %data = ( sessions_id => $_[0] );
-
-        $self->execute_hook( 'before_cart_set_sessions_id', $self, \%data );
-
-        my $ret = $orig->( $self, @_ );
-
-        $self->execute_hook( 'after_cart_set_sessions_id', $self, \%data );
-
-        return $ret;
-    }
-    else {
-        return $orig->($self);
-    }
-};
 
 =head2 subtotal
 
@@ -198,30 +156,10 @@ The user id of the logged in user.
 =cut
 
 has users_id => (
-    is  => 'rw',
-    isa => Str,
+    is     => 'ro',
+    isa    => Str,
+    writer => 'set_users_id',
 );
-
-around users_id => sub {
-    my ( $orig, $self ) = ( shift, shift );
-
-    if ( @_ > 0 ) {
-
-        # set users_id for the cart
-        my %data = ( users_id => $_[0] );
-
-        $self->execute_hook( 'before_cart_set_users_id', $self, \%data );
-
-        my $ret = $orig->( $self, @_ );
-
-        $self->execute_hook( 'after_cart_set_users_id', $self, \%data );
-
-        return $ret;
-    }
-    else {
-        return $orig->($self);
-    }
-};
 
 =head1 PRODUCT METHODS
 
@@ -232,18 +170,12 @@ Removes all products from the cart.
 =cut
 
 around clear => sub {
-    my ( $orig, $self ) = ( shift, shift );
-
-    # run hook before clearing the cart
-    $self->execute_hook( 'before_cart_clear', $self );
+    my ( $orig, $self ) = @_;
 
     # fire off the clear
     $orig->( $self, @_ );
     $self->clear_subtotal;
     $self->clear_total;
-
-    # run hook after clearing the cart
-    $self->execute_hook( 'after_cart_clear', $self );
 
     return;
 };
@@ -293,7 +225,6 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
-        print STDERR "AAAAAAAAA\n";
     if ( blessed($product) ) {
         die "product argument is not an Interchange6::Cart::Product"
           unless ( $product->isa('Interchange6::Cart::Product') );
@@ -334,7 +265,7 @@ sub add {
 
         $oldproduct = $self->product_get($index);
 
-        $product->quantity( $oldproduct->quantity + $product->quantity );
+        $product->set_quantity( $oldproduct->quantity + $product->quantity );
 
         $self->_product_set( $index, $product );
 
@@ -353,38 +284,6 @@ sub add {
 
     return $product;
 }
-
-=head2 add_hook( $hook );
-
-This binds a coderef to an installed hook.
-
-  $hook = Interchange6::Hook->new(
-      name => 'before_cart_remove',
-      code => sub {
-          my ( $cart, $product ) = @_;
-          if ( $product->sku eq '123' ) {
-              die 'Product not removed due to hook.';
-          }
-      }
-  )
-
-  $cart->add_hook( $hook );
-
-See L</HOOKS> for details of the available hooks.
-
-=cut
-
-around add_hook => sub {
-    my ( $orig, $self ) = ( shift, shift );
-    my ($hook) = @_;
-    my $name = $hook->name;
-
-    # if that hook belongs to the app, register it now and return
-    return $self->$orig(@_) if $self->has_hook($name);
-
-    # for now extra hooks cannot be added so die if we got here
-    croak "add_hook failed";
-};
 
 =head2 find
 
@@ -443,39 +342,23 @@ Remove product from the cart. Takes SKU of product to identify the product.
 
 sub remove {
     my ( $self, $arg ) = @_;
-    my ( $index, $product );
 
-    # run hook before locating product
-    $self->execute_hook( 'before_cart_remove_validate', $self, $arg );
+    my $index = $self->product_index( sub { $_->sku eq $arg } );
 
-    $index = $self->product_index( sub { $_->sku eq $arg } );
+    # remove product from our array
+    my $ret = $self->_delete($index);
+    die "remove sku $arg failed" unless defined $ret;
 
-    if ( $index >= 0 ) {
-
-        # run hooks before adding product to cart
-        $product = $self->product_get($index);
-
-        $self->execute_hook( 'before_cart_remove', $self, $product );
-
-        # remove product from our array
-        $self->_delete($index);
-        $self->clear_subtotal;
-        $self->clear_total;
-
-        $self->execute_hook( 'after_cart_remove', $self, $product );
-
-        return 1;
-    }
-
-    # product missing
-    die "Product not found in cart: $arg.";
+    $self->clear_subtotal;
+    $self->clear_total;
+    return $ret;
 }
 
 =head2 seed $product_ref
 
 Seeds products within the cart from $product_ref.
 
-B<NOTE:> use with caution since any existing products in the cart will be lost and since cart hooks are not executed since $cart->add is not used.
+B<NOTE:> use with caution since any existing products in the cart will be lost.
 
   $cart->seed([
       { sku => 'BMX2015', price => 20, quantity = 1 },
@@ -508,6 +391,10 @@ sub seed {
     return $self->products;
 }
 
+=head2 set_sessions_id
+
+Writer method for L<sessions_id>.
+
 =head2 update
 
 Update quantity of products in the cart.
@@ -517,17 +404,17 @@ Parameters are pairs of SKUs and quantities, e.g.
   $cart->update(9780977920174 => 5,
                 9780596004927 => 3);
 
-Triggers before_cart_update and after_cart_update hooks.
+A quantity of zero is equivalent to removing this product.
 
-A quantity of zero is equivalent to removing this product,
-so in this case the remove hooks will be invoked instead
-of the update hooks.
+Returns updated products that are still in the cart. Products removed
+via quantity 0 or products for which quantity has not changed will not
+be returned.
 
 =cut
 
 sub update {
     my ( $self, @args ) = @_;
-    my ( $sku, $qty, $product, $update );
+    my ( $sku, $qty, $product, $update, @products );
 
   ARGS: while ( @args > 0 ) {
         $sku = shift @args;
@@ -538,25 +425,19 @@ sub update {
         }
 
         if ( $qty == 0 ) {
-
             $self->remove($sku);
             next;
         }
 
         # jump to next product if quantity stays the same
-        next if $qty == $product->quantity;
+        next ARGS if $qty == $product->quantity;
 
-        # run hook before updating the cart
-        $update = { quantity => $qty };
-
-        $self->execute_hook( 'before_cart_update', $self, $product, $update );
-
-        $product->quantity($qty);
-
-        $self->execute_hook( 'after_cart_update', $self, $product, $update );
+        $product->set_quantity($qty);
+        $self->clear_subtotal;
+        $self->clear_total;
+        push @products, $product;
     }
-    $self->clear_subtotal;
-    $self->clear_total;
+    return wantarray ? @products : \@products;
 }
 
 # after cost changes we need to clear the total
@@ -571,70 +452,6 @@ after clear_costs => sub {
     $self->clear_subtotal;
     $self->clear_total;
 };
-
-=head1 HOOKS
-
-The following hooks are available:
-
-=over 4
-
-=item before_cart_add_validate
-
-Called in L</add> for items added as hash(ref)s. Not called for products passed into L</add> that are already L<Interchange6::Cart::Product> objects.
-
-Receives: $cart, \%args
-
-=item before_cart_add
-
-Called in L</add> immediately before the Interchange6::Cart::Product is added to the cart.
-
-Receives: $cart, $product
-
-=item after_cart_add
-
-Called in L</add> after product has been added to the cart.
-
-Receives: $cart, $product
-
-=item before_cart_remove_validate
-
-Called at start of L</remove> before arg has been validated.
-
-Receives: $cart, $sku
-
-=item before_cart_remove
-
-Called in L</remove> before product is removed from cart.
-
-Receives: $cart, $product
-
-=item after_cart_remove
-
-Called in L</remove> after product has been removed from cart.
-
-Receives: $cart, $product
-
-=item before_cart_update
-
-=item after_cart_update
-
-=item before_cart_clear
-
-=item after_cart_clear
-
-=item before_cart_set_users_id
-
-=item after_cart_set_users_id
-
-=item before_cart_set_sessions_id
-
-=item after_cart_set_sessions_id
-
-=item before_cart_rename
-
-=item after_cart_rename
-
-=back
 
 =head1 AUTHORS
 

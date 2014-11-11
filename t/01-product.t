@@ -127,7 +127,7 @@ $args->{quantity} = 4;
 $args->{price}    = undef;
 
 throws_ok { $product = Interchange6::Cart::Product->new($args) }
-qr/price.+not a positive numeric/,
+qr/is not any of the types/,
   "create Product with undef price";
 
 # empty price
@@ -135,14 +135,14 @@ qr/price.+not a positive numeric/,
 $args->{price} = '';
 
 throws_ok { $product = Interchange6::Cart::Product->new($args) }
-qr/price.+is not a positive num/, "create Product with empty price";
+qr/is not any of the types/, "create Product with empty price";
 
 # negative price
 
 $args->{price} = -5;
 
 throws_ok { $product = Interchange6::Cart::Product->new($args) }
-qr/price.+is not a positive num/, "create Product with negative price";
+qr/is not any of the types/, "create Product with negative price";
 
 # no price
 
@@ -184,13 +184,13 @@ is( $product->price, 42, "price is still 42" );
 
 # change quantity
 
-lives_ok { $ret = $product->quantity(20) } "change quantity";
+lives_ok { $ret = $product->set_quantity(20) } "change quantity";
 is( $ret,               20, "quantity 20 is returned" );
 is( $product->quantity, 20, "product quantity is 20" );
 
 # bad quantity
 
-throws_ok { $ret = $product->quantity(-2) } qr/quantity.+is not a positive num/,
+throws_ok { $ret = $product->set_quantity(-2) } qr/quantity.+is not a positive num/,
   "try to set negative quantity";
 
 is( $product->quantity, 20, "product quantity is still 20" );

@@ -5,8 +5,7 @@ package Interchange6::Cart::Product;
 use strict;
 use Moo;
 use Interchange6::Types;
-use Interchange6::Hook;
-with 'Interchange6::Role::Costs', 'Interchange6::Role::Hookable';
+with 'Interchange6::Role::Costs';
 
 use namespace::clean;
 
@@ -60,7 +59,7 @@ has name => (
 
 =head2 price
 
-Product price is required and a positive number.
+Product price is required and a positive number or zero.
 
 Price is required, because you want to maintain the price that was valid at the time of adding to the cart. Should the price in the shop change in the meantime, it will maintain this price.
 
@@ -68,7 +67,7 @@ Price is required, because you want to maintain the price that was valid at the 
 
 has price => (
     is        => 'ro',
-    isa       => PositiveNum,
+    isa       => AnyOf [ PositiveNum, Zero ],
     required  => 1,
 );
 
@@ -80,7 +79,7 @@ Selling price is the price after group pricing, tier pricing or promotional disc
 
 has selling_price => (
     is        => 'rw',
-    isa       => PositiveNum,
+    isa       => Num,
     builder   => 1,
     lazy      => 1,
 );
@@ -98,10 +97,17 @@ than zero. Default for quantity is 1.
 =cut
 
 has quantity => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => AllOf [ PositiveNum, Int ],
     default => 1,
+    writer  => 'set_quantity',
 );
+
+after quantity => sub {
+    my $self = shift;
+    $self->clear_subtotal;
+    $self->clear_total;
+};
 
 =head2 sku
 

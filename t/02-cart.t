@@ -23,7 +23,7 @@ isa_ok( $cart, 'Interchange6::Cart' );
 
 ok( $cart->name eq 'main', 'Cart name is main' );
 
-lives_ok { $ret = $cart->name('discount') } "Change cart name";
+lives_ok { $ret = $cart->rename('discount') } "Change cart name";
 cmp_ok( $ret,        'eq', 'discount', "New name was returned" );
 cmp_ok( $cart->name, 'eq', 'discount', "Cart name is discount" );
 
@@ -147,143 +147,24 @@ cmp_ok( $cart->quantity, '==', 8, "cart quantity is 8" );
 
 lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 
-lives_ok ( sub {
-    $hook = Interchange6::Hook->new(
-        name => 'bad_hook',
-        code => sub {
-            my $cart = shift;
-        }
-    );
-},
-"Create bad_hook");
-
-throws_ok( sub { $cart->add_hook($hook) }, qr/add_hook failed/,
-    "fail to add bad_hook" );
-
-# before_cart_clear hook
-
 $product = { sku => 'DEF', name => 'Foobar', price => 5 };
 lives_ok { $cart->add($product) } "add product";
 
 cmp_ok( $cart->count, '==', 1, "1 product in cart" );
 
-lives_ok ( sub {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_clear',
-        code => sub {
-            die 'some failure';
-        }
-    );
-},
-"Create before_cart_clear hook" );
-
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-throws_ok( sub { $cart->clear }, qr/some failure/, "cart clear" );
-
-cmp_ok( $cart->count, '==', 1, "still 1 product in cart" );
-
-lives_ok( sub { $cart->replace_hook('before_cart_clear', undef ) },
-    "remove hook"
-);
-
 lives_ok( sub { $cart->clear }, "cart clear" );
 
 cmp_ok( $cart->count, '==', 0, "0 products in cart" );
 
-# before_cart_rename hook
-
 cmp_ok($cart->name, 'eq', 'main', "cart name is main");
 
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_rename',
-        code => sub {
-            my ($cart, $old_name, $new_name) = @_;
-            if ( $new_name eq 'not_allowed' ) {
-                die 'Cart rename failed due to hook';
-            }
-        }
-    );
-}
-"Create before_cart_rename hook for name eq not_allowed";
-
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-lives_ok { $cart->name("bananas") } "Change cart name to bananas";
+lives_ok { $cart->rename("bananas") } "Change cart name to bananas";
 
 cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
 
-throws_ok(
-    sub { $cart->name("not_allowed") },
-    qr/Cart rename failed due to hook/,
-    "Change cart name to not_allowed"
-);
-
-cmp_ok($cart->name, 'eq', 'bananas', "cart name is bananas");
-
-lives_ok( sub { $cart->replace_hook('before_cart_rename', undef ) },
-    "remove hook"
-);
-
-lives_ok { $cart->name("not_allowed") } "Change cart name to not_allowed";
-
-cmp_ok($cart->name, 'eq', 'not_allowed', "cart name is not_allowed");
-
-lives_ok { $cart->name("main") } "Change cart name to main";
+lives_ok { $cart->rename("main") } "Change cart name to main";
 
 cmp_ok($cart->name, 'eq', 'main', "cart name is main");
-
-# before_cart_add_validate hook
-
-lives_ok( sub {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_add_validate',
-        code => sub {
-            die 'general error';
-        }
-    );
-},
-"Create before_cart_add_validate hook");
-
-lives_ok( sub { $cart->add_hook($hook) }, "Add the hook to the cart" );
-
-$product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
-throws_ok ( sub { $cart->add($product) }, qr/general error/, "Hooked");
-
-lives_ok( sub { $cart->replace_hook('before_cart_add_validate', undef ) },
-    "remove hook"
-);
-
-# before_cart_add hook
-
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_add',
-        code => sub {
-            my ( $cart, $product ) = @_;
-            if ( $product->price > 3 ) {
-                die 'Product not added due to hook.';
-            }
-        }
-    );
-}
-"Create before_cart_add hook for price > 3";
-
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-$product = { sku => 'KLM', name => 'Foobar', price => 3, quantity => 1 };
-lives_ok { $cart->add($product) } "add product with price = 3";
-
-cmp_ok( $cart->count, '==', 1, "1 product in cart" );
-
-$product = { sku => 'DEF', name => 'Foobar', price => 3.34, quantity => 1 };
-
-throws_ok(
-    sub { $cart->add($product) },
-    qr/Product not added due to hook/,
-    "add product with price = 3.34"
-);
 
 # Seed
 
@@ -312,50 +193,11 @@ lives_ok { $cart = Interchange6::Cart->new } "Create new cart";
 $ret = $cart->users_id;
 ok( !defined($ret), "Users id of anonymous user" );
 
-$ret = $cart->users_id(100);
+$ret = $cart->set_users_id(100);
 ok( $ret eq '100', "Return value of users_id setter" );
 
 $ret = $cart->users_id;
 ok( $ret eq '100', "Value of users_id after setting it to 100" );
-
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_set_users_id',
-        code => sub {
-            my ( $cart, $data ) = @_;
-            warn "Testing before_set_users_id hook with $data->{users_id}.\n";
-        }
-    );
-}
-"create hook";
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'after_cart_set_users_id',
-        code => sub {
-            my ( $cart, $data ) = @_;
-            warn "Testing after_set_users_id hook with $data->{users_id}.\n";
-        }
-    );
-}
-"create hook";
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-my $warns = warning { $ret = $cart->users_id(200) };
-
-ok(
-    ref($warns) eq 'ARRAY' && @$warns == 2,
-    "Test number of warnings from set_users_id_hook"
-);
-
-ok( $warns->[0] eq "Testing before_set_users_id hook with 200.\n",
-    "Test warning from before_set_users_id hook." )
-  || diag "Warning: $warns->[0].";
-
-ok( $warns->[1] eq "Testing after_set_users_id hook with 200.\n",
-    "Test warning from after_set_users_id hook." )
-  || diag "Warning: $warns->[1].";
 
 # sessions id
 $cart = Interchange6::Cart->new();
@@ -363,7 +205,7 @@ $cart = Interchange6::Cart->new();
 $ret = $cart->sessions_id;
 ok( !defined($ret), "Users id of anonymous user" );
 
-$ret = $cart->sessions_id('323460431348215171797029562762075811');
+$ret = $cart->set_sessions_id('323460431348215171797029562762075811');
 ok(
     $ret eq '323460431348215171797029562762075811',
     "Return value of sessions_id setter"
@@ -374,49 +216,5 @@ ok(
     $ret eq '323460431348215171797029562762075811',
 "Value of sessions_id after setting it to 323460431348215171797029562762075811"
 );
-
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'before_cart_set_sessions_id',
-        code => sub {
-            my ( $cart, $data ) = @_;
-            warn
-"Testing before_set_sessions_id hook with $data->{sessions_id}.\n";
-        }
-    );
-}
-"create hook";
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-lives_ok {
-    $hook = Interchange6::Hook->new(
-        name => 'after_cart_set_sessions_id',
-        code => sub {
-            my ( $cart, $data ) = @_;
-            warn
-              "Testing after_set_sessions_id hook with $data->{sessions_id}.\n";
-        }
-    );
-}
-"create hook";
-lives_ok { $cart->add_hook($hook) } "Add the hook to the cart";
-
-$warns =
-  warning { $ret = $cart->sessions_id('513457188818705086798161933370395265') };
-
-ok( ref($warns) eq 'ARRAY' && @$warns == 2,
-    "Test number of warnings from set_sessions_id_hook" );
-
-ok(
-    $warns->[0] eq
-"Testing before_set_sessions_id hook with 513457188818705086798161933370395265.\n",
-    "Test warning from before_set_sessions_id hook."
-) || diag "Warning: $warns->[0].";
-
-ok(
-    $warns->[1] eq
-"Testing after_set_sessions_id hook with 513457188818705086798161933370395265.\n",
-    "Test warning from after_set_sessions_id hook."
-) || diag "Warning: $warns->[1].";
 
 done_testing;
