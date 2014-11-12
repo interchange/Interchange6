@@ -161,7 +161,9 @@ has users_id => (
     writer => 'set_users_id',
 );
 
-=head1 PRODUCT METHODS
+=head1 METHODS
+
+See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head2 clear
 
@@ -203,10 +205,6 @@ This method requires a single argument.
 =head2 products_array
 
 Returns an array of Interchange::Cart::Product(s)
-
-=head1 OTHER METHODS
-
-See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head2 new
 
