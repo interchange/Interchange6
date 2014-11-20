@@ -89,6 +89,24 @@ sub _build_selling_price {
     return $self->price;
 }
 
+=head2 discount_percent
+
+This is the integer discount percentage calculated from the difference
+between L</price> and L</selling_price>. This attribute should not normally
+be set since as it is a calculated value.
+
+=cut
+
+has discount_percent => (
+    is => 'lazy',
+);
+
+sub _build_discount_percent {
+    my $self = shift;
+    return 0 if $self->price == $self->selling_price;
+    return int( ( $self->price - $self->selling_price ) / $self->price * 100 );
+}
+
 =head2 quantity
 
 Product quantity is optional and has to be a natural number greater
