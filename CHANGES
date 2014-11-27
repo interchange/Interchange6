@@ -1,5 +1,19 @@
 Revision history for Interchange6
 
+0.060 Thu Nov 27 16:51:31 2014 CET
+
+    [API CHANGES]
+
+    * Move hooks to Dancer::Plugin::Interchange6 (Peter Mottram).
+
+    [ENHANCEMENTS]
+
+    * Add discount_percent to Cart::Product class (Peter Mottram).
+
+    [TESTS]
+
+    * Add test for zero value cost (GH #20, Peter Mottram).
+
 0.060_03 Thu Nov 27 14:45:31 2014 CET
 
     [API CHANGES]
