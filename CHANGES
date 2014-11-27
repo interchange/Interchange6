@@ -1,5 +1,35 @@
 Revision history for Interchange6
 
+0.060_03 Thu Nov 27 14:45:31 2014 CET
+
+    [API CHANGES]
+
+    * Rename absolute_amount attribute to current_amount in Cart::Cost (Peter Mottram).
+    * Rename cart_costs_id attribute to id in Cart::Cost (Peter Mottram).
+    * Remove created and last_modified attributes from Cart (Peter Mottram).
+
+    [ENHANCEMENTS]
+
+    * Remove dependency on Interchange6::Schema (Peter Mottram).
+    * Add compound attribute to Cart::Cost (Peter Mottram).
+    * Move carts costs into Role::Costs (Peter Mottram).
+    * Remove Role::Errors (Peter Mottram).
+    * Add Role::Hookable to Cart::Product (Peter Mottram).
+    * Add selling_price attribute to Cart::Product (Peter Mottram).
+    * Add has_subtotal and has_total attributes to Cart (Peter Mottram).
+    * Change subtotal and total methods to attributes in Cart class (Peter Mottram).
+    * Remove set_users_id and get_users_id method from Cart class (Peter Mottram).
+    * Remove set_name and get_name method from Cart class (Peter Mottram).
+
+    [DOCUMENTATION]
+
+    * Fix typo in Interchange6::Cart::Cost's POD (Stefan Hornburg).
+    * Add discount example to Interchange6::Cart's POD (Stefan Hornburg).
+
+    [TESTS]
+
+    * Add product cost tests (Peter Mottram).
+
 0.040 Wed Jul  2 11:57:43 2014 CEST
 
     [ENHANCEMENTS]
