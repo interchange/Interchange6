@@ -18,7 +18,7 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'namespace::clean' => 0,
-        'Moo' => 0,
+        'Moo' => '1.004005',
         'MooseX::CoverableModifiers' => 0.30,
         'MooX::HandlesVia' => 0,
         'DateTime' => 0,
