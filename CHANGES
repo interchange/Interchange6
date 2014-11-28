@@ -1,5 +1,12 @@
 Revision history for Interchange6
 
+0.061 Fri Nov 28 10:57:47 2014 CET
+
+    [BUG FIXES]
+
+    * Add missing prerequisite on namespace::clean (Stefan Hornburg).
+    * Fix prerequisite on Moo (GH #21, Stefan Hornburg).
+
 0.060 Thu Nov 27 16:51:31 2014 CET
 
     [API CHANGES]
