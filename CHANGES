@@ -1,5 +1,11 @@
 Revision history for Interchange6
 
+0.062 Sat Nov 29 10:04:20 2014 CET
+
+    [BUG FIXES]
+
+    * Remove Interchange6::Hook from cart test (GH #22, Peter Mottram).
+
 0.061 Fri Nov 28 10:57:47 2014 CET
 
     [BUG FIXES]
