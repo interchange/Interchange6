@@ -11,7 +11,6 @@ use Test::Warnings qw/warning :no_end_test/;
 
 use Interchange6::Cart;
 use Interchange6::Cart::Product;
-use Interchange6::Hook;
 
 my ( $args, $cart, $product, $ret, $hook );
 
