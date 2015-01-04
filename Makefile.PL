@@ -14,7 +14,8 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'Test::More' => 0,
         'Test::Most' => 0,
-        'Test::Warnings' => 0,
+        # warning feature was introduced in this release (GH #25)
+        'Test::Warnings' => '0.005',
     },
     PREREQ_PM => {
         'namespace::clean' => 0,
