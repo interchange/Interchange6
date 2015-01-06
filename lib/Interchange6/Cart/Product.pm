@@ -187,23 +187,101 @@ has uri => (
     isa => VarChar [255],
 );
 
+=head2 extra
+
+Hash reference of extra things the cart product might want to store such as:
+
+=over
+
+=item * variant attributes in order to be able to change variant within cart
+
+=item * simple attributes to allow display of them within cart
+
+=back
+
+=cut
+
+has extra => (
+    is          => 'ro',
+    isa         => HashRef,
+    default     => sub { {} },
+    handles_via => 'Hash',
+    handles     => {
+        get_extra     => 'get',
+        set_extra     => 'set',
+        delete_extra  => 'delete',
+        keys_extra    => 'keys',
+        clear_extra   => 'clear',
+        exists_extra  => 'exists',
+        defined_extra => 'defined',
+    },
+);
+
 =head1 METHODS
 
-=head2 clear_subtotal
+=head2 L</extra> methods
+
+=over
+
+=item * get_extra($key, $key2, $key3...)
+
+See L<Data::Perl::Role::Collection::Hash/get>
+
+=item * set_extra($key => $value, $key2 => $value2...)
+
+See L<Data::Perl::Role::Collection::Hash/set>
+
+=item * delete_extra($key, $key2, $key3...)
+
+See L<Data::Perl::Role::Collection::Hash/set>
+
+=item * keys_extra
+
+See L<Data::Perl::Role::Collection::Hash/keys>
+
+=item * clear_extra
+
+See L<Data::Perl::Role::Collection::Hash/clear>
+
+=item * exists_extra($key)
+
+See L<Data::Perl::Role::Collection::Hash/exists>
+
+=item * defined_extra($key)
+
+See L<Data::Perl::Role::Collection::Hash/defined>
+
+=back
+
+
+=head2 L</subtotal> methods
+
+=over
+
+=item * clear_subtotal
 
 Clears L</subtotal>.
 
-=head2 clear_total
-
-Clears L</total>.
-
-=head2 has_subtotal
+=item * has_subtotal
 
 predicate on L</subtotal>.
 
-=head2 has_total
+=back
+
+
+=head2 L</total> methods
+
+=over
+
+=item * clear_total
+
+Clears L</total>.
+
+=item * has_total
 
 predicate on L</total>.
+
+=back
 
 =cut
 
