@@ -4,6 +4,7 @@ package Interchange6::Cart::Product;
 
 use strict;
 use Moo;
+use MooX::HandlesVia;
 use Interchange6::Types;
 with 'Interchange6::Role::Costs';
 
