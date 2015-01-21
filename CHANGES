@@ -1,5 +1,16 @@
 Revision history for Interchange6
 
+0.063 Wed Jan 21 22:05:56 2015 CET
+
+    [ENHANCEMENTS]
+
+    * Add use MooX::HandlesVia to Cart::Product class (Peter Mottram).
+    * Add extra attribute to Cart::Product class (Peter Mottram).
+
+    [BUG FIXES]
+
+    * Add version to prerequisite on Test::Warnings (GH #25, Stefan Hornburg).
+
 0.062 Sat Nov 29 10:04:20 2014 CET
 
     [BUG FIXES]
