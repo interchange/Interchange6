@@ -140,6 +140,19 @@ has sku => (
     required => 1,
 );
 
+=head2 canonical_sku
+
+If this product is a variant of a "parent" product then C<canonical_sku>
+is the sku of the parent product.
+
+=cut
+
+has canonical_sku => (
+    is        => 'ro',
+    default   => undef,
+    predicate => 'is_variant',
+);
+
 =head2 subtotal
 
 Subtotal calculated as L</price> * L</quantity>. Lazy set via builder.
@@ -281,6 +294,21 @@ Clears L</total>.
 =item * has_total
 
 predicate on L</total>.
+
+
+=item * is_variant
+
+predicate on L</canonical_sku>.
+
+=item * is_canonical
+
+inverse of L</is_variant>.
+
+=cut
+
+sub is_canonical {
+    return shift->is_variant ? 0 : 1;
+}
 
 =back
 
