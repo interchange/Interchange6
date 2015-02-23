@@ -148,8 +148,8 @@ is the sku of the parent product.
 =cut
 
 has canonical_sku => (
-    is        => 'ro',
-    predicate => 'is_variant',
+    is      => 'ro',
+    default => undef,
 );
 
 =head2 subtotal
@@ -297,16 +297,22 @@ predicate on L</total>.
 
 =item * is_variant
 
-predicate on L</canonical_sku>.
+Returns 1 if L</canonical_sku> is defined else 0.
+
+=cut
+
+sub is_variant {
+    return defined shift->canonical_sku ? 1 : 0;
+}
 
 =item * is_canonical
 
-inverse of L</is_variant>.
+Returns 0 if L</canonical_sku> is defined else 1.
 
 =cut
 
 sub is_canonical {
-    return shift->is_variant ? 0 : 1;
+    return defined shift->canonical_sku ? 0 : 1;
 }
 
 =back
