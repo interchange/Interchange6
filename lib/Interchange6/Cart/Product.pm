@@ -149,7 +149,6 @@ is the sku of the parent product.
 
 has canonical_sku => (
     is        => 'ro',
-    default   => undef,
     predicate => 'is_variant',
 );
 
