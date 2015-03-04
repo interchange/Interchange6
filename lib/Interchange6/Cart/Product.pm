@@ -196,8 +196,19 @@ Product uri
 =cut
 
 has uri => (
-    is  => 'rw',
+    is  => 'ro',
     isa => VarChar [255],
+);
+
+=head2 weight
+
+Product weight
+
+=cut
+
+has weight => (
+    is => 'ro',
+    isa => AnyOf [ Undef, Num ],
 );
 
 =head2 extra
