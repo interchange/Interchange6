@@ -216,4 +216,58 @@ ok(
 "Value of sessions_id after setting it to 323460431348215171797029562762075811"
 );
 
+# weight
+
+lives_ok( sub { $cart->clear }, "clear cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+ok( !defined $cart->weight, "cart weight is undef" );
+ok( $cart->has_weight, "has_weight predicate is true" );
+lives_ok( sub { $cart->clear }, "clear cart" );
+
+$args = { sku => 'ABC', name => 'Foobar', price => 42 };
+
+lives_ok( sub { $product = Interchange6::Cart::Product->new($args) },
+    "create Interchange::Cart::Product with undef weight" );
+
+lives_ok( sub { $cart->add($product) }, "add product to cart" );
+cmp_ok( $cart->count, '==', 1, "1 product in cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+ok( !defined $cart->weight, "cart weight is undef" );
+ok( $cart->has_weight, "has_weight predicate is true" );
+
+$args = { sku => 'DEF', name => 'Foobar', price => 42, weight => 0 };
+
+lives_ok( sub { $product = Interchange6::Cart::Product->new($args) },
+    "create Interchange::Cart::Product with zero weight" );
+
+lives_ok( sub { $cart->add($product) }, "add product to cart" );
+cmp_ok( $cart->count, '==', 2, "2 products in cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+cmp_ok( $cart->weight, '==', 0, "cart weight is zero" );
+ok( $cart->has_weight, "has_weight predicate is true" );
+
+$args = { sku => 'GHI', name => 'Foobar', price => 42, weight => 2 };
+
+lives_ok( sub { $product = Interchange6::Cart::Product->new($args) },
+    "create Interchange::Cart::Product with weight 2" );
+
+lives_ok( sub { $cart->add($product) }, "add product to cart" );
+cmp_ok( $cart->count, '==', 3, "3 products in cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+cmp_ok( $cart->weight, '==', 2, "cart weight is 2" );
+ok( $cart->has_weight, "has_weight predicate is true" );
+
+lives_ok( sub { $cart->remove('GHI') }, "remove product from cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+cmp_ok( $cart->count, '==', 2, "2 products in cart" );
+cmp_ok( $cart->weight, '==', 0, "cart weight is zero" );
+
+lives_ok( sub { $cart->add($product) }, "add product to cart" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+cmp_ok( $cart->weight, '==', 2, "cart weight is 2" );
+
+lives_ok( sub { $cart->update( GHI => 5 ) }, "change product quantity to 5" );
+ok( !$cart->has_weight, "has_weight predicate is false" );
+cmp_ok( $cart->weight, '==', 10, "cart weight is 10" );
+
 done_testing;

@@ -202,7 +202,7 @@ has uri => (
 
 =head2 weight
 
-Product weight
+Weight of quantity 1 of this product.
 
 =cut
 

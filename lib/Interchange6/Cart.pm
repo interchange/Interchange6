@@ -161,6 +161,29 @@ has users_id => (
     writer => 'set_users_id',
 );
 
+=head2 weight
+
+Returns total weight of all products in the cart. If all products have
+unedfined weight then this returns undef.
+
+=cut
+
+has weight => (
+    is        => 'lazy',
+    clearer   => 1,
+    predicate => 1,
+);
+
+sub _build_weight {
+    my $self = shift;
+    my $weight;
+
+    map { $weight += $_->weight * $_->quantity }
+      grep { defined $_->weight } $self->products_array;
+
+    return $weight;
+}
+
 =head1 METHODS
 
 See L<Interchange6::Role::Costs> for details of cost attributes and methods.
@@ -178,6 +201,7 @@ around clear => sub {
     $orig->( $self, @_ );
     $self->clear_subtotal;
     $self->clear_total;
+    $self->clear_weight;
 
     return;
 };
@@ -279,6 +303,7 @@ sub add {
 
     $self->clear_subtotal;
     $self->clear_total;
+    $self->clear_weight;
 
     return $product;
 }
@@ -313,6 +338,10 @@ predicate on L</subtotal>.
 =head2 has_total
 
 predicate on L</total>.
+
+=head2 has_weight
+
+predicate on L</weight>.
 
 =head2 quantity
 
@@ -349,6 +378,7 @@ sub remove {
 
     $self->clear_subtotal;
     $self->clear_total;
+    $self->clear_weight;
     return $ret;
 }
 
@@ -376,8 +406,6 @@ sub seed {
         unless ( blessed($product)
             && $product->isa('Interchange6::Cart::Product') )
         {
-            $self->clear_subtotal;
-            $self->clear_total;
             die "failed to create product.";
         }
 
@@ -385,6 +413,7 @@ sub seed {
     }
     $self->clear_subtotal;
     $self->clear_total;
+    $self->clear_weight;
 
     return $self->products;
 }
@@ -433,6 +462,7 @@ sub update {
         $product->set_quantity($qty);
         $self->clear_subtotal;
         $self->clear_total;
+        $self->clear_weight;
         push @products, $product;
     }
     return wantarray ? @products : \@products;
