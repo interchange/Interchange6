@@ -207,8 +207,9 @@ Weight of quantity 1 of this product.
 =cut
 
 has weight => (
-    is => 'ro',
-    isa => AnyOf [ Undef, Num ],
+    is     => 'ro',
+    isa    => AnyOf [ Undef, Num ],
+    writer => 'set_weight',
 );
 
 =head2 extra
