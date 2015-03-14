@@ -1,5 +1,20 @@
 Revision history for Interchange6
 
+0.072
+
+    [FEATURES]
+
+    * add weight attribute to Cart::Product and Cart (Peter Mottram)
+
+    [ENHANCEMENTS]
+
+    * add canonical_sku attribute to Cart::Product (Peter Mottram)
+    * add is_canonical and is_variant methods to Cart::Product (Peter Mottram)
+
+    [API CHANGES]
+
+    * Change Cart::Product uri attribute to read-only (Peter Mottram)
+
 0.063 Wed Jan 21 22:05:56 2015 CET
 
     [ENHANCEMENTS]
