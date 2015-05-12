@@ -39,11 +39,18 @@ has id => (
 
 A reference to the Cart object that this Cart::Product belongs to.
 
+=over
+
+=item Writer: C<set_cart>
+
+=back
+
 =cut
 
 has cart => (
-    is        => 'rw',
-    default   => undef,
+    is      => 'ro',
+    default => undef,
+    writer  => 'set_cart',
 );
 
 =head2 name
@@ -64,25 +71,37 @@ Product price is required and a positive number or zero.
 
 Price is required, because you want to maintain the price that was valid at the time of adding to the cart. Should the price in the shop change in the meantime, it will maintain this price.
 
+=over
+
+=item Writer: C<set_price>
+
+=back
+
 =cut
 
 has price => (
     is        => 'ro',
     isa       => AnyOf [ PositiveNum, Zero ],
     required  => 1,
+    writer    => 'set_price',
 );
 
 =head2 selling_price
 
 Selling price is the price after group pricing, tier pricing or promotional discounts have been applied. If it is not set then it defaults to L</price>.
 
+=over
+
+=item Writer: C<set_selling_price>
+
+=back
+
 =cut
 
 has selling_price => (
-    is        => 'rw',
-    isa       => Num,
-    builder   => 1,
-    lazy      => 1,
+    is        => 'lazy',
+    isa       => AnyOf [ PositiveNum, Zero ],
+    writer    => 'set_selling_price',
 );
 
 sub _build_selling_price {

@@ -50,16 +50,29 @@ Generic cart class for L<Interchange6>.
 
 Cart id can be used for subclasses, e.g. primary key value for carts in the database.
 
+=over
+
+=item Writer: C<set_id>
+
+=back
+
 =cut
 
 has id => (
-    is  => 'rw',
-    isa => Str,
+    is     => 'ro',
+    isa    => Str,
+    writer => 'set_id',
 );
 
 =head2 name
 
 The cart name. Default is 'main'.
+
+=over
+
+=item Writer: C<rename>
+
+=back
 
 =cut
 
@@ -98,6 +111,12 @@ has products => (
 =head2 sessions_id
 
 The session ID for the cart.
+
+=over
+
+=item Writer: C<set_sessions_id>
+
+=back
 
 =cut
 
@@ -152,6 +171,12 @@ sub _build_total {
 =head2 users_id
 
 The user id of the logged in user.
+
+=over
+
+=item Writer: C<set_users_id>
+
+=back
 
 =cut
 
@@ -297,7 +322,7 @@ sub add {
 
         # a new product for this cart
 
-        $product->cart( $self );
+        $product->set_cart( $self );
         $self->_product_push($product);
     }
 
@@ -417,10 +442,6 @@ sub seed {
 
     return $self->products;
 }
-
-=head2 set_sessions_id
-
-Writer method for L<sessions_id>.
 
 =head2 update
 
