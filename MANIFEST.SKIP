@@ -3,3 +3,4 @@
 ^.*.bak
 ^.*.old
 .gitignore
+.travis.yml
