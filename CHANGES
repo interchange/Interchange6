@@ -1,5 +1,12 @@
 Revision history for Interchange6
 
+0.086 Wed Jul  1 16:31:37 2015 CEST
+
+    [ENHANCEMENTS]
+
+    * Make all accessors read-only and add writers where appropriate.
+      This includes adding set_price to product (Peter Mottram, GH #23).
+
 0.080 Sun Mar 15 08:47:11 2015 CET
 
     [FEATURES]
