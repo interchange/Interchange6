@@ -16,11 +16,9 @@ Interchange6::Cart::Cost - Cart cost class for Interchange6 Shop Machine
 
 Cart cost class for L<Interchange6>.
 
-=head2 ATTRIBUTES
+=head1 ATTRIBUTES
 
-=over 4
-
-=item * id
+=head2 id
 
 Cart id can be used for subclasses, e.g. primary key value for cart or product costs in the database.
 
@@ -31,7 +29,7 @@ has id => (
     isa => Int,
 );
 
-=item * name
+=head2 name
 
 Unique name is required.
 
@@ -43,7 +41,7 @@ has name => (
     required => 1,
 );
 
-=item * label
+=head2 label
 
 Label for display. Default is same value as label.
 
@@ -54,7 +52,12 @@ has label => (
     isa => AllOf [ Defined, NotEmpty, VarChar [64] ],
 );
 
-=item * relative
+sub _build_label {
+    my $self = shift;
+    return $self->name;
+};
+
+=head2 relative
 
 Boolean defaults to 0. If true then L<amount> is relative to L<object subtotal|Intechange6::Role::Cost/subtotal>. If false then L<amount> is an absolute cost.
 
@@ -62,11 +65,11 @@ Boolean defaults to 0. If true then L<amount> is relative to L<object subtotal|I
 
 has relative => (
     is      => 'ro',
-    isa     => Bool,
+    isa     => AllOf [ Defined, Bool ],
     default => 0,
 );
 
-=item * inclusive
+=head2 inclusive
 
 Boolean defaults to 0. If true signifies that the cost is already included in the price for example to calculate the tax component for gross prices.
 
@@ -74,23 +77,23 @@ Boolean defaults to 0. If true signifies that the cost is already included in th
 
 has inclusive => (
     is      => 'ro',
-    isa     => Bool,
+    isa     => AllOf [ Defined, Bool ],
     default => 0,
 );
 
-=item * compound
+=head2 compound
 
 Boolean defaults to 0. If true signifies that any following costs should be applied to the modified price B<after> this cost has been applied. This might be used for such things as discounts which are applied before taxes are applied to the modified price.
 
 =cut
 
 has compound => (
-    is       => 'ro',
-    isa      => Bool,
-    default  => 0,
+    is      => 'ro',
+    isa     => AllOf [ Defined, Bool ],
+    default => 0,
 );
 
-=item * amount
+=head2 amount
 
 Required amount of the cost. This is the absolute cost unless L</relative> is true in which case it is relative to the L<object subtotal|Interchange6::Role::Cost/subtotal>. For example for a tax of 8% amount should be set to 0.08
 
@@ -102,31 +105,23 @@ has amount => (
     required => 1,
 );
 
-=item * current_amount
+=head2 current_amount
 
 Calculated current amount of cost. Unless L</relative> is true this will be the same as L</amount>. If L</relative> is true then this is value is recalulated whenever C<total> is called on the object.
+
+=over
+
+=item Writer: C<set_current_amount>
+
+=back
 
 =cut
 
 has current_amount => (
-    is     => 'rw',
+    is     => 'ro',
     isa    => Num,
-    coerce => sub { sprintf( "%.2f", $_[0] ) },
+    coerce => sub { defined $_[0] && sprintf( "%.2f", $_[0] ) },
+    writer => 'set_current_amount',
 );
-
-=back
-
-=head1 PRIVATE METHODS
-
-=head2 _build_label
-
-If L<label> is not supplied then set it to the value of L<name>.
-
-=cut
-
-sub _build_label {
-    my $self = shift;
-    return $self->name;
-};
 
 1;
