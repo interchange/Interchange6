@@ -22,6 +22,8 @@ See L<Interchange6::Role::Costs> for details of cost attributes and methods.
 
 =head1 ATTRIBUTES
 
+See also L<Interchange6::Role::Costs/ATTRIBUTES>.
+
 Each cart product has the following attributes:
 
 =head2 id
@@ -189,25 +191,6 @@ sub _build_subtotal {
     return sprintf( "%.2f", $self->selling_price * $self->quantity);
 }
 
-=head2 total
-
-Total calculated as L</subtotal> plus all L<Interchange6::Role:Costs/costs>.
-
-=cut
-
-has total => (
-    is        => 'lazy',
-    isa       => Num,
-    clearer   => 1,
-    predicate => 1,
-);
-
-sub _build_total {
-    my $self = shift;
-    my $subtotal = $self->subtotal;
-    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
-}
-
 =head2 uri
 
 Product uri
@@ -263,6 +246,8 @@ has extra => (
 
 =head1 METHODS
 
+See also L<Interchange6::Role::Costs/METHODS>.
+
 =head2 L</extra> methods
 
 =over
@@ -297,7 +282,6 @@ See L<Data::Perl::Role::Collection::Hash/defined>
 
 =back
 
-
 =head2 L</subtotal> methods
 
 =over
@@ -312,21 +296,7 @@ predicate on L</subtotal>.
 
 =back
 
-
-=head2 L</total> methods
-
-=over
-
-=item * clear_total
-
-Clears L</total>.
-
-=item * has_total
-
-predicate on L</total>.
-
-
-=item * is_variant
+=head2 is_variant
 
 Returns 1 if L</canonical_sku> is defined else 0.
 
@@ -336,7 +306,7 @@ sub is_variant {
     return defined shift->canonical_sku ? 1 : 0;
 }
 
-=item * is_canonical
+=head2 is_canonical
 
 Returns 0 if L</canonical_sku> is defined else 1.
 
@@ -345,10 +315,6 @@ Returns 0 if L</canonical_sku> is defined else 1.
 sub is_canonical {
     return defined shift->canonical_sku ? 0 : 1;
 }
-
-=back
-
-=cut
 
 # after cost changes we need to clear the total as well as cart subtotal/total
 

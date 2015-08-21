@@ -31,11 +31,52 @@ has costs => (
         cost_get    => 'get',
         cost_set    => 'set',
         cost_count  => 'count',
-        _cost_push  => 'push',
+        cost_push   => 'push',
         get_costs   => 'elements',
     },
     init_arg => undef,
 );
+
+=head2 total
+
+Returns the sum of the objects L</costs> added to its C<subtotal>.
+
+=cut
+
+has total => (
+    is        => 'lazy',
+    isa       => Num,
+    clearer   => 1,
+    predicate => 1,
+);
+
+sub _build_total {
+    my $self = shift;
+
+    my @costs    = $self->get_costs;
+    my $subtotal = $self->subtotal;
+
+    my $sum      = 0;
+    foreach my $i ( 0 .. $#costs ) {
+
+        if ( $costs[$i]->relative ) {
+            $costs[$i]->set_current_amount( $subtotal * $costs[$i]->amount );
+        }
+        else {
+            $costs[$i]->set_current_amount( $costs[$i]->amount );
+        }
+
+        if ( $costs[$i]->compound ) {
+            $subtotal += $costs[$i]->current_amount;
+        }
+
+        unless ( $costs[$i]->inclusive ) {
+            $sum += $costs[$i]->current_amount;
+        }
+    }
+
+    return sprintf( "%.2f", $subtotal + $sum );
+}
 
 =head1 METHODS
 
@@ -43,7 +84,11 @@ has costs => (
 
 Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
 
-=head2 cost_get
+=head2 clear_total
+
+Clears L</total>.
+
+=head2 cost_get($index)
 
 Returns an element of the array of costs for the object by its index. You can also use negative index numbers, just as with Perl's core array handling.
 
@@ -51,9 +96,18 @@ Returns an element of the array of costs for the object by its index. You can al
 
 Returns the number of cost elements for the object.
 
+=head2 cost_push($cost)
+
+Like Perl's normal C<push> this adds the supplied L<Interchange::Cart::Cost>
+to L</costs>.
+
 =head2 get_costs
 
 Returns all of the cost elements for the object as an array (not an arrayref).
+
+=head2 has_total
+
+predicate on L</total>.
 
 =head2 apply_cost
 
@@ -114,7 +168,7 @@ sub apply_cost {
         $cost = Interchange6::Cart::Cost->new( $cost );
     }
 
-    $self->_cost_push( $cost );
+    $self->cost_push( $cost );
 }
 
 =head2 cost
@@ -168,47 +222,6 @@ sub cost {
     }
 
     return $cost->current_amount;
-}
-
-# private methods
-
-sub _calculate {
-    my ( $self, $subtotal, $costs, $display ) = @_;
-    my ( @costs, $sum, $reset_costs );
-
-    if ( ref $costs eq 'HASH' ) {
-        @costs = ($costs);
-    }
-    elsif ( ref $costs eq 'ARRAY' ) {
-        @costs = @$costs;
-    }
-    else {
-        @costs = $self->get_costs;
-        $reset_costs = 1;
-    }
-
-    $sum = 0;
-
-    foreach my $i (0..$#costs) {
-
-        if ( $costs[$i]->relative ) {
-            $costs[$i]->current_amount($subtotal * $costs[$i]->amount);
-        }
-        else {
-            $costs[$i]->current_amount($costs[$i]->amount);
-        }
-
-        if ( $costs[$i]->compound ) {
-            $subtotal += $costs[$i]->current_amount;
-        }
-
-        unless ( $costs[$i]->inclusive ) {
-            $sum += $costs[$i]->current_amount;
-        }
-        $self->cost_set($i, $costs[$i]) if $reset_costs;
-    }
-
-    return $sum;
 }
 
 1;

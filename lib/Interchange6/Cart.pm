@@ -46,6 +46,8 @@ Generic cart class for L<Interchange6>.
 
 =head1 ATTRIBUTES
 
+See also L<Interchange6::Role::Costs/ATTRIBUTES>.
+
 =head2 id
 
 Cart id can be used for subclasses, e.g. primary key value for carts in the database.
@@ -101,9 +103,9 @@ has products => (
         product_get    => 'get',
         product_index  => 'first_index',
         products_array => 'elements',
-        _delete        => 'delete',
-        _product_push  => 'push',
-        _product_set   => 'set',
+        product_delete => 'delete',
+        product_push   => 'push',
+        product_set    => 'set',
     },
     init_arg => undef,
 );
@@ -146,26 +148,6 @@ sub _build_subtotal {
     map { $subtotal += $_->total } $self->products_array;
 
     return sprintf( "%.2f", $subtotal );
-}
-
-=head2 total
-
-Returns current cart total including costs.
-
-=cut
-
-has total => (
-    is        => 'lazy',
-    clearer   => 1,
-    predicate => 1,
-);
-
-sub _build_total {
-    my $self = shift;
-
-    my $subtotal = $self->subtotal;
-
-    return sprintf( "%.2f", $subtotal + $self->_calculate($subtotal) );
 }
 
 =head2 users_id
@@ -211,7 +193,7 @@ sub _build_weight {
 
 =head1 METHODS
 
-See L<Interchange6::Role::Costs> for details of cost attributes and methods.
+See also L<Interchange6::Role::Costs/METHODS>.
 
 =head2 clear
 
@@ -239,9 +221,13 @@ Returns the number of different products in the shopping cart. If you have 5 app
 
 Return boolean 1 or 0 depending on whether the cart is empty or not.
 
+=head2 product_delete($index)
+
+Deletes the product at the specified index.
+
 =head2 product_get($index)
 
-Returns the product at the specified index;
+Returns the product at the specified index.
 
 =head2 product_index( sub {...})
 
@@ -250,6 +236,16 @@ This method returns the index of the first matching product in the cart. The mat
 This method requires a single argument.
 
   my $index = $cart->product_index( sub { $_->sku eq 'ABC' } );
+
+=head2 product_push($product)
+
+Like Perl's normal C<push> this adds the supplied L<Interchange::Cart::Product>
+to L</products>.
+
+=head2 product_set($index, $product)
+
+Sets the product at the specified index in L</products> to the supplied
+L<Interchange::Cart::Product>.
 
 =head2 products_array
 
@@ -314,7 +310,7 @@ sub add {
 
         $product->set_quantity( $oldproduct->quantity + $product->quantity );
 
-        $self->_product_set( $index, $product );
+        $self->product_set( $index, $product );
 
         $update = 1;
     }
@@ -323,7 +319,7 @@ sub add {
         # a new product for this cart
 
         $product->set_cart( $self );
-        $self->_product_push($product);
+        $self->product_push($product);
     }
 
     $self->clear_subtotal;
@@ -398,7 +394,7 @@ sub remove {
     my $index = $self->product_index( sub { $_->sku eq $arg } );
 
     # remove product from our array
-    my $ret = $self->_delete($index);
+    my $ret = $self->product_delete($index);
     die "remove sku $arg failed" unless defined $ret;
 
     $self->clear_subtotal;
@@ -434,7 +430,7 @@ sub seed {
             die "failed to create product.";
         }
 
-        $self->_product_push($product);
+        $self->product_push($product);
     }
     $self->clear_subtotal;
     $self->clear_total;
