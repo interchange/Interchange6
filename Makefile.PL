@@ -12,6 +12,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     BUILD_REQUIRES => {
+        'aliased'    => 0,
         'Test::More' => 0,
         'Test::Most' => 0,
         # warning feature was introduced in this release (GH #25)
