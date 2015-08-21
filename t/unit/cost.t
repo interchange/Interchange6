@@ -101,8 +101,7 @@ $args{inclusive} = "true";
 throws_ok { $cost = Cost->new(%args) } qr/isa.+inclusive.+failed/i,
   "fail inclusive as string";
 
-throws_ok { $cost->current_amount(65) } qr/usage.+current_amount/i,
-  "current_amount is immutable";
+dies_ok { $cost->current_amount(65) } "current_amount is immutable";
 
 lives_ok { $cost->set_current_amount(65) } "set_current_amount 65";
 
