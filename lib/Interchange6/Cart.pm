@@ -485,19 +485,6 @@ sub update {
     return wantarray ? @products : \@products;
 }
 
-# after cost changes we need to clear the total
-
-after apply_cost => sub {
-    my $self = shift;
-    $self->clear_subtotal;
-    $self->clear_total;
-};
-after clear_costs => sub {
-    my $self = shift;
-    $self->clear_subtotal;
-    $self->clear_total;
-};
-
 =head1 AUTHORS
 
  Stefan Hornburg (Racke), <racke@linuxia.de>

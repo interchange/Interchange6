@@ -224,4 +224,10 @@ sub cost {
     return $cost->current_amount;
 }
 
+after apply_cost => sub {
+    shift->clear_total;
+};
+after clear_costs => sub {
+    shift->clear_total;
+};
 1;

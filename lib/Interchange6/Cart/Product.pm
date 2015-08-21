@@ -316,11 +316,11 @@ sub is_canonical {
     return defined shift->canonical_sku ? 0 : 1;
 }
 
-# after cost changes we need to clear the total as well as cart subtotal/total
+# after cost changes we need to clear the cart subtotal/total
+# our own total is handled by the Costs role
 
 after apply_cost => sub {
     my $self = shift;
-    $self->clear_total;
     if ( $self->cart ) {
         $self->cart->clear_subtotal;
         $self->cart->clear_total;
@@ -329,7 +329,6 @@ after apply_cost => sub {
 
 after clear_costs => sub {
     my $self = shift;
-    $self->clear_total;
     if ( $self->cart ) {
         $self->cart->clear_subtotal;
         $self->cart->clear_total;
