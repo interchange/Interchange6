@@ -13,8 +13,8 @@ t/00-base.t
 t/01-product.t
 t/02-cart.t
 t/03-cost.t
-t/manifest.t
-t/pod-coverage.t
-t/pod.t
+t/author/manifest.t
+t/author/pod-coverage.t
+t/author/pod.t
 t/unit/cost.t
 t/unit/costs_role.t
