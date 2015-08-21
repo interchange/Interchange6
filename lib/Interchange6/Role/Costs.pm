@@ -37,6 +37,10 @@ has costs => (
     init_arg => undef,
 );
 
+after 'clear_costs', 'cost_set', 'cost_push' => sub {
+    shift->clear_total;
+};
+
 =head2 total
 
 Returns the sum of the objects L</costs> added to its C<subtotal>.
@@ -84,6 +88,8 @@ sub _build_total {
 
 Removes all the costs previously applied (using apply_cost). Used typically if you have free shipping or something similar, you can clear the costs.
 
+This method also calls L</clear_total>.
+
 =head2 clear_total
 
 Clears L</total>.
@@ -101,9 +107,17 @@ Returns the number of cost elements for the object.
 Like Perl's normal C<push> this adds the supplied L<Interchange::Cart::Cost>
 to L</costs>.
 
+This method also calls L</clear_total>.
+
 =head2 get_costs
 
 Returns all of the cost elements for the object as an array (not an arrayref).
+
+=head2 cost_set($index, $cost)
+
+Sets the cost at C<$index> to <$cost>.
+
+This method also calls L</clear_total>.
 
 =head2 has_total
 
@@ -112,6 +126,8 @@ predicate on L</total>.
 =head2 apply_cost
 
 Apply cost to object. L</apply_cost> is a generic method typicaly used for taxes, discounts, coupons, gift certificates, etc.
+
+The cost is added using L</cost_push>.
 
 B<Example:> Absolute cost
 
@@ -224,10 +240,4 @@ sub cost {
     return $cost->current_amount;
 }
 
-after apply_cost => sub {
-    shift->clear_total;
-};
-after clear_costs => sub {
-    shift->clear_total;
-};
 1;
