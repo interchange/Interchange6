@@ -167,24 +167,14 @@ sub apply_cost {
     die "argument to apply_cost undefined" unless defined($cost);
 
     if ( blessed($cost) ) {
-        die("Supplied cost not an Interchange6::Cart::Cost : " . ref($cost))
+        die( "Supplied cost not an Interchange6::Cart::Cost : " . ref($cost) )
           unless $cost->isa('Interchange6::Cart::Cost');
     }
     else {
-        if ( @_ % 2 ) {
-
-            # a hashref or obj
-            $cost = @_;
-        }
-        else {
-
-            # hash
-            $cost = {@_};
-        }
-        $cost = Interchange6::Cart::Cost->new( $cost );
+        $cost = Interchange6::Cart::Cost->new(@_);
     }
 
-    $self->cost_push( $cost );
+    $self->cost_push($cost);
 }
 
 =head2 cost
