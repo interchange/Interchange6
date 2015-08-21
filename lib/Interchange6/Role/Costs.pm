@@ -221,7 +221,7 @@ sub cost {
 
     if ( defined $cost ) {
         # calculate total in order to reset all costs
-        my $total = $self->total;
+        $self->total;
     }
     else {
         die "Bad argument to cost: " . $loc;
