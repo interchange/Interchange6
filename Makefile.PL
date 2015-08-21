@@ -26,8 +26,9 @@ WriteMakefile(
         'MooX::Types::MooseLike' => 0,
         'DateTime' => 0,
     },
-    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean               => { FILES => 'Interchange6-*' },
+    dist          => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean         => { FILES => 'Interchange6-*' },
+    test          => { TESTS => join( ' ', (glob( 't/*.t'), glob('t/*/*.t')))},
     META_MERGE        => {
         resources => {
             repository  => 'https://github.com/interchange/Interchange6.git',
