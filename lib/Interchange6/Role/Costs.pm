@@ -22,7 +22,7 @@ When called without arguments returns an array reference of all costs associated
 =cut
 
 has costs => (
-    is          => 'rw',
+    is          => 'ro',
     isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
     default     => sub { [] },
     handles_via => 'Array',
