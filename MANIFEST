@@ -16,3 +16,5 @@ t/03-cost.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
+t/unit/cost.t
+t/unit/costs_role.t
