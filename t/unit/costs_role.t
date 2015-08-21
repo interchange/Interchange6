@@ -128,4 +128,27 @@ throws_ok { $obj->cost("") } qr/Bad argument to cost/,
 throws_ok { $obj->cost("BadName") } qr/Bad argument to cost/,
   "fail call cost with name that doesn't exist";
 
+lives_ok { $obj->clear_costs } "clear_costs";
+
+lives_ok { $obj->apply_cost( name => "Discount", amount => -5, compound => 1 ) }
+"apply_cost Discount -5 compound";
+
+cmp_ok( $obj->total, '==', 15, "total is 15" );
+
+lives_ok { $obj->apply_cost( name => "Shipping", amount => 2, compound => 1 ) }
+"apply_cost Shipping 2 compound";
+
+cmp_ok( $obj->total, '==', 17, "total is 17" );
+
+lives_ok {
+    $obj->apply_cost(
+        name      => "Tax",
+        amount    => 0.20,
+        relative  => 1,
+      )
+}
+"apply_cost Tax 0.20 relative";
+
+cmp_ok( $obj->total, '==', 20.40, "total is 20.40" );
+
 done_testing;

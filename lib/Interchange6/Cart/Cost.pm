@@ -85,6 +85,9 @@ has inclusive => (
 
 Boolean defaults to 0. If true signifies that any following costs should be applied to the modified price B<after> this cost has been applied. This might be used for such things as discounts which are applied before taxes are applied to the modified price.
 
+Using L</compound> along with L</inclusive> makes no sense and no guarantee is
+given as to what the result might be.
+
 =cut
 
 has compound => (

@@ -73,8 +73,7 @@ sub _build_total {
         if ( $costs[$i]->compound ) {
             $subtotal += $costs[$i]->current_amount;
         }
-
-        unless ( $costs[$i]->inclusive ) {
+        elsif ( !$costs[$i]->inclusive ) {
             $sum += $costs[$i]->current_amount;
         }
     }
