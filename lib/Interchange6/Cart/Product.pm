@@ -51,7 +51,7 @@ A reference to the Cart object that this Cart::Product belongs to.
 
 has cart => (
     is      => 'ro',
-    default => undef,
+    isa     => InstanceOf ['Interchange6::Cart'],
     writer  => 'set_cart',
 );
 

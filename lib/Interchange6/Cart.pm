@@ -93,7 +93,7 @@ Called without args returns a hash reference of L<Interchange6::Cart::Product>. 
 
 has products => (
     is  => 'rwp',
-    isa => ArrayRef [ InstanceOf ['Interchange::Cart::Product'] ],
+    isa => ArrayRef [ InstanceOf ['Interchange6::Cart::Product'] ],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
