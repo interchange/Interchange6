@@ -10,7 +10,6 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 README
 t/00-base.t
-t/01-product.t
 t/02-cart.t
 t/03-cost.t
 t/author/manifest.t
