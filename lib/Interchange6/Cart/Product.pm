@@ -51,7 +51,8 @@ A reference to the Cart object that this Cart::Product belongs to.
 
 has cart => (
     is      => 'ro',
-    isa     => InstanceOf ['Interchange6::Cart'],
+    isa     => AnyOf [ Undef, InstanceOf ['Interchange6::Cart'] ],
+    default => undef,
     writer  => 'set_cart',
 );
 
@@ -117,10 +118,14 @@ This is the integer discount percentage calculated from the difference
 between L</price> and L</selling_price>. This attribute should not normally
 be set since as it is a calculated value.
 
+L</discount_percent> is cleared if either L</set_price> or
+L<set_selling_price> methods are called.
+
 =cut
 
 has discount_percent => (
-    is => 'lazy',
+    is      => 'lazy',
+    clearer => 1
 );
 
 sub _build_discount_percent {
@@ -128,6 +133,10 @@ sub _build_discount_percent {
     return 0 if $self->price == $self->selling_price;
     return int( ( $self->price - $self->selling_price ) / $self->price * 100 );
 }
+
+after 'set_price', 'set_selling_price' => sub {
+    shift->clear_discount_percent;
+};
 
 =head2 quantity
 

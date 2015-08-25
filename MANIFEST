@@ -16,5 +16,6 @@ t/03-cost.t
 t/author/manifest.t
 t/author/pod-coverage.t
 t/author/pod.t
+t/unit/cart_product.t
 t/unit/cost.t
 t/unit/costs_role.t
