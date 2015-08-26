@@ -26,6 +26,17 @@ This module provides the following APIs:
 
 L<Interchange6::Cart>
 
+=item Cart Products
+
+L<Interchange6::Cart::Product>
+
+=item Cart Costs
+
+L<Interchangr6::Cart::Cost>
+
+Cart costs can be applied to both Carts and Cart Products and are integrated
+into each via the role L<Interchange6::Role::Costs>.
+
 =back
 
 To build your own business website, please take a look at
