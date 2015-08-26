@@ -96,7 +96,7 @@ make sure appropriate arguements are passed.
 =cut
 
 has products => (
-    is  => 'rwp',
+    is  => 'ro',
     isa => ArrayRef [ InstanceOf ['Interchange6::Cart::Product'] ],
     default     => sub { [] },
     handles_via => 'Array',
