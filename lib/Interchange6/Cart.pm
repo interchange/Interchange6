@@ -96,7 +96,9 @@ make sure appropriate arguements are passed.
 =cut
 
 has products => (
-    is  => 'ro',
+    # rwp allows us to clear out products in seed via _set_products
+    # without disturbing what subclasses might expect of clear
+    is  => 'rwp',
     isa => ArrayRef [ InstanceOf ['Interchange6::Cart::Product'] ],
     default     => sub { [] },
     handles_via => 'Array',
@@ -428,19 +430,17 @@ sub seed {
     die "argument to seed must be an array reference"
       unless ref($product_ref) eq 'ARRAY';
 
-    $self->clear;
-    my @products;
+    # we can't use ->clear since subclasses might wrap that to do
+    # interesting things like remove products from cart in database
+    $self->_set_products([]);
 
-    try {
-        for my $args ( @{$product_ref} ) {
-            my $product = Interchange6::Cart::Product->new($args);
-            $self->product_push($product);
-        }
+    my @products;
+    for my $args ( @{$product_ref} ) {
+        push @products, Interchange6::Cart::Product->new($args);
     }
-    catch {
-        $self->clear;
-        die $_;
-    };
+
+    # if we got here then all products are good so put them in the cart
+    $self->product_push(@products);
 
     return $self->products;
 }
