@@ -14,6 +14,7 @@ t/00-base.t
 t/author/manifest.t
 t/author/pod-coverage.t
 t/author/pod.t
+t/costs.t
 t/unit/cart.t
 t/unit/cart_product.t
 t/unit/cost.t
