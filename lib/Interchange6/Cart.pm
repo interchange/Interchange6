@@ -79,10 +79,10 @@ The cart name. Default is 'main'.
 =cut
 
 has name => (
-    is       => 'ro',
-    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
-    default  => 'main',
-    writer   => 'rename',
+    is      => 'ro',
+    isa     => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    default => 'main',
+    writer  => 'rename',
 );
 
 =head2 products
@@ -128,6 +128,7 @@ The session ID for the cart.
 
 has sessions_id => (
     is      => 'ro',
+    isa     => Str,
     clearer => 1,
     writer  => 'set_sessions_id',
 );
@@ -153,6 +154,18 @@ sub _build_subtotal {
 
     return sprintf( "%.2f", $subtotal );
 }
+
+after 'add', 'clear', 'product_push', 'product_set', 'product_delete', 'remove',
+  'seed', 'update' => sub {
+
+    my $self = shift;
+    $self->clear_subtotal;
+    $self->clear_weight;
+  };
+
+after 'clear_subtotal' => sub {
+    shift->clear_total;
+};
 
 =head2 users_id
 
@@ -192,7 +205,7 @@ sub _build_weight {
     map { $weight += $_->weight * $_->quantity }
       grep { defined $_->weight } $self->products_array;
 
-    return $weight;
+    return $weight ? $weight : 0;
 }
 
 =head1 METHODS
@@ -202,20 +215,6 @@ See also L<Interchange6::Role::Costs/METHODS>.
 =head2 clear
 
 Removes all products from the cart.
-
-=cut
-
-around clear => sub {
-    my ( $orig, $self ) = @_;
-
-    # fire off the clear
-    $orig->( $self, @_ );
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->clear_weight;
-
-    return;
-};
 
 =head2 count
 
@@ -272,20 +271,26 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
-    if ( blessed($product) ) {
+    if ( !defined $product ) {
+        die "undefined argument passed to add";
+    }
+    elsif ( blessed($product) ) {
         die "product argument is not an Interchange6::Cart::Product"
           unless ( $product->isa('Interchange6::Cart::Product') );
     }
     else {
 
-        # we got a hash(ref) rather than an Product
-
         my %args;
 
-        if ( is_HashRef($product) ) {
+        if ( @_ % 2 ) {
+            if ( ref($product) eq 'HASH' ) {
 
-            # copy args
-            %args = %{$product};
+                # copy args
+                %args = %{$product};
+            }
+            else {
+                die "argument to add should be hash or hashref";
+            }
         }
         else {
 
@@ -293,12 +298,6 @@ sub add {
         }
 
         $product = 'Interchange6::Cart::Product'->new(%args);
-
-        unless ( blessed($product)
-            && $product->isa('Interchange6::Cart::Product') )
-        {
-            die "failed to create cart product.";
-        }
     }
 
    # cart may already contain an product with the same sku
@@ -322,13 +321,9 @@ sub add {
 
         # a new product for this cart
 
-        $product->set_cart( $self );
+        $product->set_cart($self);
         $self->product_push($product);
     }
-
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->clear_weight;
 
     return $product;
 }
@@ -395,15 +390,16 @@ Remove product from the cart. Takes SKU of product to identify the product.
 sub remove {
     my ( $self, $arg ) = @_;
 
+    die "no argument passed to remove" unless defined $arg;
+
     my $index = $self->product_index( sub { $_->sku eq $arg } );
+
+    die "sku $arg not found in cart" unless $index >= 0;
 
     # remove product from our array
     my $ret = $self->product_delete($index);
     die "remove sku $arg failed" unless defined $ret;
 
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->clear_weight;
     return $ret;
 }
 
@@ -419,26 +415,32 @@ B<NOTE:> use with caution since any existing products in the cart will be lost.
       { sku => 'DBF2020', price => 200, quantity = 5 },
   ]);
 
+If any product fails to be added (for example bad product args) then an
+exception is thrown and no products will be added to cart.
+
+On success returns L</products>.
+
 =cut
 
 sub seed {
     my ( $self, $product_ref ) = @_;
-    my ( $args, $product );
 
-  PRODUCT: for $args ( @{ $product_ref || [] } ) {
+    die "argument to seed must be an array reference"
+      unless ref($product_ref) eq 'ARRAY';
 
-        $product = Interchange6::Cart::Product->new($args);
-        unless ( blessed($product)
-            && $product->isa('Interchange6::Cart::Product') )
-        {
-            die "failed to create product.";
+    $self->clear;
+    my @products;
+
+    try {
+        for my $args ( @{$product_ref} ) {
+            my $product = Interchange6::Cart::Product->new($args);
+            $self->product_push($product);
         }
-
-        $self->product_push($product);
     }
-    $self->clear_subtotal;
-    $self->clear_total;
-    $self->clear_weight;
+    catch {
+        $self->clear;
+        die $_;
+    };
 
     return $self->products;
 }
@@ -454,9 +456,9 @@ Parameters are pairs of SKUs and quantities, e.g.
 
 A quantity of zero is equivalent to removing this product.
 
-Returns updated products that are still in the cart. Products removed
-via quantity 0 or products for which quantity has not changed will not
-be returned.
+Returns an array of updated products that are still in the cart.
+Products removed via quantity 0 or products for which quantity has not
+changed will not be returned.
 
 =cut
 
@@ -467,6 +469,11 @@ sub update {
   ARGS: while ( @args > 0 ) {
         $sku = shift @args;
         $qty = shift @args;
+
+        die "sku not defined in arg to update" unless defined $sku;
+
+        die "quantity not supplied as arg to update for sku $sku"
+          unless defined $qty;
 
         unless ( $product = $self->find($sku) ) {
             die "Product for $sku not found in cart.";
@@ -481,12 +488,9 @@ sub update {
         next ARGS if $qty == $product->quantity;
 
         $product->set_quantity($qty);
-        $self->clear_subtotal;
-        $self->clear_total;
-        $self->clear_weight;
         push @products, $product;
     }
-    return wantarray ? @products : \@products;
+    return @products;
 }
 
 =head1 AUTHORS

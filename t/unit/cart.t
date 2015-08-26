@@ -1,0 +1,485 @@
+#! perl
+
+use strict;
+use warnings;
+
+use Test::More;
+use Test::Exception;
+
+use aliased 'Interchange6::Cart';
+use aliased 'Interchange6::Cart::Product';
+
+my ( $cart, $product, $products, @products, %args );
+
+lives_ok { $cart = Cart->new } "cart with no args";
+
+# immutable attrs
+
+lives_ok {
+    $product = Product->new( name => "One", sku => "SKU01", price => 10 )
+}
+"create a product";
+
+dies_ok { $cart->id(1) } "id is immutable";
+dies_ok { $cart->name("name") } "name is immutable";
+dies_ok { $cart->products( [$product] ) } "products is immutable";
+dies_ok { $cart->sessions_id(1) } "sessions_id is immutable";
+dies_ok { $cart->subtotal(1) } "subtotal is immutable";
+dies_ok { $cart->users_id("1") } "users_id is immutable";
+dies_ok { $cart->weight(1) } "weight is immutable";
+
+# id
+
+$args{id} = undef;
+throws_ok { $cart = Cart->new(%args) } qr/isa.+id.+failed/i,
+  "fail new with undef id";
+
+$args{id} = '34w';
+lives_ok { $cart = Cart->new(%args) } "ok new with defined id";
+
+throws_ok { $cart->set_id(undef) } qr/isa.+id.+failed/i, "fail set_id(undef)";
+
+lives_ok { $cart->set_id(12) } "ok set_id(12)";
+
+# name
+
+$args{name} = undef;
+throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
+  "fail new with undef name";
+
+$args{name} = '';
+throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
+  "fail new with empty name";
+
+$args{name} = "w" x 256;
+throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
+  "fail new with name length > 255";
+
+$args{name} = "w" x 255;
+lives_ok { $cart = Cart->new(%args) } "ok new with name length 255";
+
+throws_ok { $cart->rename(undef) } qr/isa.+name.+failed/i, "fail rename(undef)";
+
+throws_ok { $cart->rename('') } qr/isa.+name.+failed/i, "fail rename('')";
+
+throws_ok { $cart->rename( "x" x 256 ) } qr/isa.+name.+failed/i,
+  "fail rename('x' x 256)";
+
+lives_ok { $cart->rename( "x" x 255 ) } "ok rename('x' x 255)";
+
+# products
+
+cmp_ok( ref( $cart->products ),
+    'eq', 'ARRAY', "products is an array reference" );
+
+ok( $cart->is_empty, "cart is_empty" );
+
+cmp_ok( $cart->count, '==', 0, "count is 0" );
+
+lives_ok {
+    $product = Product->new(
+        name     => "One",
+        sku      => "SKU01",
+        price    => 10,
+        weight   => 2,
+        quantity => 1
+      )
+}
+"create a product";
+
+$args{products} = [$product];
+
+# passing value to products is ignored
+lives_ok { $cart = Cart->new(%args) } "new cart with 1 product";
+
+ok( $cart->is_empty, "cart is_empty" );
+
+cmp_ok( $cart->count, '==', 0, "count is 0" );
+
+delete $args{products};
+
+lives_ok { $cart->product_push($product) } "ok product_push";
+
+ok( !$cart->is_empty,     "not cart is_empty" );
+ok( !$cart->has_subtotal, "not has_subtotal" );
+ok( !$cart->has_total,    "not has_total" );
+ok( !$cart->has_weight,   "not has_weight" );
+
+cmp_ok( $cart->count,    '==', 1,  "count is 1" );
+cmp_ok( $cart->quantity, '==', 1,  "quantity is 1" );
+cmp_ok( $cart->subtotal, '==', 10, "subtotal is 10" );
+cmp_ok( $cart->total,    '==', 10, "total is 10" );
+cmp_ok( $cart->weight,   '==', 2,  "weight is 2" );
+
+ok( $cart->has_subtotal, "has_subtotal" );
+ok( $cart->has_total,    "has_total" );
+ok( $cart->has_weight,   "has_weight" );
+
+lives_ok {
+    $product = Product->new(
+        name     => "Two",
+        sku      => "SKU02",
+        price    => 20,
+        weight   => 4,
+        quantity => 2
+      )
+}
+"create another product";
+
+lives_ok { $cart->product_push($product) } "ok product_push";
+
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 3,  "quantity is 3" );
+cmp_ok( $cart->subtotal, '==', 50, "subtotal is 50" );
+cmp_ok( $cart->total,    '==', 50, "total is 50" );
+cmp_ok( $cart->weight,   '==', 10, "weight is 10" );
+
+lives_ok { $product = $cart->product_get(0) } "ok product_get(0)";
+
+cmp_ok( $product->name, 'eq', 'One', "product name is One" );
+
+lives_ok { $product = $cart->product_get(1) } "ok product_get(1)";
+
+cmp_ok( $product->name, 'eq', 'Two', "product name is Two" );
+
+lives_ok { $product = $cart->product_get(2) } "ok product_get(2)";
+
+ok( !defined $product, "not defined" );
+
+lives_ok {
+    $product = Product->new(
+        name     => "Three",
+        sku      => "SKU03",
+        price    => 30,
+        weight   => 6,
+        quantity => 3
+      )
+}
+"create product Three";
+
+lives_ok { $cart->product_push($product) } "ok product_push";
+
+cmp_ok( $cart->count,    '==', 3,   "count is 3" );
+cmp_ok( $cart->quantity, '==', 6,   "quantity is 6" );
+cmp_ok( $cart->subtotal, '==', 140, "subtotal is 140" );
+cmp_ok( $cart->total,    '==', 140, "total is 140" );
+cmp_ok( $cart->weight,   '==', 28,  "weight is 28" );
+
+lives_ok { $cart->product_delete(1) } "ok product_delete(1)";
+
+cmp_ok( $cart->count,    '==', 2,   "count is 2" );
+cmp_ok( $cart->quantity, '==', 4,   "quantity is 4" );
+cmp_ok( $cart->subtotal, '==', 100, "subtotal is 100" );
+cmp_ok( $cart->total,    '==', 100, "total is 100" );
+cmp_ok( $cart->weight,   '==', 20,  "weight is 20" );
+
+lives_ok { $product = $cart->product_get(1) } "ok product_get(1)";
+
+cmp_ok( $product->name, 'eq', 'Three', "product name is Three" );
+
+lives_ok {
+    $product = Product->new(
+        name     => "Four",
+        sku      => "SKU04",
+        price    => 40,
+        weight   => 8,
+        quantity => 4
+      )
+}
+"create product Four";
+
+lives_ok { $cart->product_set( 1, $product ) } 'ok product_set(1, $product)';
+
+cmp_ok( $cart->count,    '==', 2,   "count is 2" );
+cmp_ok( $cart->quantity, '==', 5,   "quantity is 5" );
+cmp_ok( $cart->subtotal, '==', 170, "subtotal is 170" );
+cmp_ok( $cart->total,    '==', 170, "total is 170" );
+cmp_ok( $cart->weight,   '==', 34,  "weight is 34" );
+
+lives_ok { $product = $cart->product_get(1) } "ok product_get(1)";
+
+cmp_ok( $product->name, 'eq', 'Four', "product name is Four" );
+
+cmp_ok( $cart->product_index( sub { $_->name eq 'One' } ),
+    '==', 0, "search for One using product_index" );
+
+cmp_ok( $cart->product_index( sub { $_->name eq 'Four' } ),
+    '==', 1, "search for Four using product_index" );
+
+lives_ok { @products = $cart->products_array } "get products_array";
+
+cmp_ok( scalar @products, '==', 2, "two products in array" );
+
+cmp_ok( $products[0]->name, 'eq', 'One', "1st product in array is One" );
+
+lives_ok { $cart->clear } "ok clear";
+
+ok( $cart->is_empty, "cart is empty" );
+
+ok( $cart->is_empty,      "cart is_empty" );
+ok( !$cart->has_subtotal, "not has_subtotal" );
+ok( !$cart->has_total,    "not has_total" );
+ok( !$cart->has_weight,   "not has_weight" );
+
+cmp_ok( $cart->count,    '==', 0, "count is 0" );
+cmp_ok( $cart->quantity, '==', 0, "quantity is 0" );
+cmp_ok( $cart->subtotal, '==', 0, "subtotal is 0" );
+cmp_ok( $cart->total,    '==', 0, "total is 0" );
+cmp_ok( $cart->weight,   '==', 0, "weight is 0" );
+
+# sessions_id
+
+$args{sessions_id} = undef;
+throws_ok { $cart = Cart->new(%args) } qr/isa.+sessions_id.+failed/i,
+  "fail new with undef sessions_id";
+
+$args{sessions_id} = '34w';
+lives_ok { $cart = Cart->new(%args) } "ok new with defined sessions_id";
+
+throws_ok { $cart->set_sessions_id(undef) } qr/isa.+sessions_id.+failed/i,
+  "fail set_sessions_id(undef)";
+
+lives_ok { $cart->set_sessions_id(12) } "ok set_sessions_id(12)";
+
+cmp_ok( $cart->sessions_id, 'eq', "12", "sessions_id is 12" );
+
+lives_ok { $cart->clear_sessions_id } "ok clear_sessions_id";
+
+ok( !defined $cart->sessions_id, "sessions_id is undef" );
+
+# users_id
+
+$args{users_id} = undef;
+throws_ok { $cart = Cart->new(%args) } qr/isa.+users_id.+failed/i,
+  "fail new with undef users_id";
+
+$args{users_id} = '34w';
+lives_ok { $cart = Cart->new(%args) } "ok new with defined users_id";
+
+throws_ok { $cart->set_users_id(undef) } qr/isa.+users_id.+failed/i,
+  "fail set_users_id(undef)";
+
+lives_ok { $cart->set_users_id(12) } "ok set_users_id(12)";
+
+cmp_ok( $cart->users_id, 'eq', "12", "users_id is 12" );
+
+# add
+
+lives_ok { $cart = Cart->new } "create empty cart";
+
+throws_ok { $cart->add } qr/undefined arg/i, "fail add with no args";
+
+throws_ok { $cart->add(undef) } qr/undefined/i, "fail add undef";
+
+throws_ok { $cart->add('') } qr/argument to add should be hash or hashref/,
+  "fail add scalar";
+
+package TestObj {
+    use Moo;
+    has id => ( is => 'ro' );
+}
+
+throws_ok { $cart->add( TestObj->new ) }
+qr/not an Interchange6::Cart::Product/i, "add non-Product object";
+
+lives_ok {
+    $product = Product->new(
+        name     => "One",
+        sku      => "SKU01",
+        price    => 10,
+        weight   => 2,
+        quantity => 1
+      )
+}
+"create a product";
+
+lives_ok { $cart->add($product) } "add product obj";
+
+cmp_ok( $cart->count,    '==', 1,  "count is 1" );
+cmp_ok( $cart->quantity, '==', 1,  "quantity is 1" );
+cmp_ok( $cart->subtotal, '==', 10, "subtotal is 10" );
+cmp_ok( $cart->total,    '==', 10, "total is 10" );
+cmp_ok( $cart->weight,   '==', 2,  "weight is 2" );
+
+# adding the same object with different attributes values would mean we
+# change the product that is already in the cart and that is not a valid
+# scenario so create new object
+lives_ok {
+    $product = Product->new(
+        name     => "One",
+        sku      => "SKU01",
+        price    => 10,
+        weight   => 2,
+        quantity => 2
+      )
+}
+"create a product";
+
+lives_ok { $cart->add($product) } "add same product qty 2";
+
+cmp_ok( $cart->count,    '==', 1,  "count is 1" );
+cmp_ok( $cart->quantity, '==', 3,  "quantity is 3" );
+cmp_ok( $cart->subtotal, '==', 30, "subtotal is 30" );
+cmp_ok( $cart->total,    '==', 30, "total is 30" );
+cmp_ok( $cart->weight,   '==', 6,  "weight is 6" );
+
+lives_ok {
+    $cart->add(
+        name     => "Two",
+        sku      => "SKU02",
+        price    => 20,
+        weight   => 4,
+        quantity => 2
+      )
+}
+"Add product Two qty 2 as hash";
+
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 5,  "quantity is 5" );
+cmp_ok( $cart->subtotal, '==', 70, "subtotal is 70" );
+cmp_ok( $cart->total,    '==', 70, "total is 70" );
+cmp_ok( $cart->weight,   '==', 14, "weight is 14" );
+
+# update
+
+lives_ok { $cart->update } "update with no args does nothing";
+
+throws_ok { $cart->update( "badsku" => 1 ) } qr/badsku not found in cart/,
+  "fail update with bad sku";
+
+throws_ok { $cart->update("SKU01") } qr/quantity not supplied.+SKU01/,
+  "fail update no quantity";
+
+throws_ok { $cart->update(undef) } qr/sku not defined/, "fail update sku undef";
+
+throws_ok { $cart->update( SKU01 => 2.3 ) } qr/isa.+quantity.+failed/,
+  "fail update with non-integer quantity";
+
+lives_ok { @products = $cart->update( SKU01 => 3 ) }
+"set SKU01 qty to what it already is in cart";
+
+cmp_ok( @products, '==', 0, "no products returned" );
+
+lives_ok { @products = $cart->update( SKU01 => 1 ) } "set SKU01 qty to 1";
+
+cmp_ok( @products,       '==', 1,  "1 product returned" );
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 3,  "quantity is 3" );
+cmp_ok( $cart->subtotal, '==', 50, "subtotal is 50" );
+cmp_ok( $cart->total,    '==', 50, "total is 50" );
+cmp_ok( $cart->weight,   '==', 10, "weight is 10" );
+
+lives_ok { @products = $cart->update( SKU01 => 1, SKU02 => 1 ) }
+"set SKU01 qty to 1 and SKU02 qty to 1";
+
+cmp_ok( @products,    '==', 1, "1 product returned (qty unchanged for SKU01)" );
+cmp_ok( $cart->count, '==', 2, "count is 2" );
+cmp_ok( $cart->quantity, '==', 2,  "quantity is 2" );
+cmp_ok( $cart->subtotal, '==', 30, "subtotal is 30" );
+cmp_ok( $cart->total,    '==', 30, "total is 30" );
+cmp_ok( $cart->weight,   '==', 6,  "weight is 6" );
+
+lives_ok { @products = $cart->update( SKU01 => 2, SKU02 => 2 ) }
+"set SKU01 qty to 2 and SKU02 qty to 2";
+
+cmp_ok( @products,       '==', 2,  "2 products returned" );
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 4,  "quantity is 4" );
+cmp_ok( $cart->subtotal, '==', 60, "subtotal is 60" );
+cmp_ok( $cart->total,    '==', 60, "total is 60" );
+cmp_ok( $cart->weight,   '==', 12, "weight is 12" );
+
+lives_ok { @products = $cart->update( SKU01 => 0 ) } "set SKU01 qty to 0";
+
+cmp_ok( @products,       '==', 0,  "0 products returned" );
+cmp_ok( $cart->count,    '==', 1,  "count is 1" );
+cmp_ok( $cart->quantity, '==', 2,  "quantity is 2" );
+cmp_ok( $cart->subtotal, '==', 40, "subtotal is 40" );
+cmp_ok( $cart->total,    '==', 40, "total is 40" );
+cmp_ok( $cart->weight,   '==', 8,  "weight is 8" );
+
+# remove
+
+throws_ok { $cart->remove } qr/no argument/i, "fail remove with no args";
+cmp_ok( $cart->count, '==', 1, "count is 1" );
+
+throws_ok { $cart->remove(undef) } qr/no argument/i,
+  "fail remove with undef arg";
+cmp_ok( $cart->count, '==', 1, "count is 1" );
+
+throws_ok { $cart->remove("badsku") } qr/sku badsku not found/i,
+  "fail remove non-existant sku";
+cmp_ok( $cart->count, '==', 1, "count is 1" );
+
+lives_ok { $product = $cart->remove("SKU02") } "ok remove SKU02";
+cmp_ok( $cart->count,    '==', 0,       "count is 0" );
+cmp_ok( $cart->quantity, '==', 0,       "quantity is 0" );
+cmp_ok( $cart->subtotal, '==', 0,       "subtotal is 0" );
+cmp_ok( $cart->total,    '==', 0,       "total is 0" );
+cmp_ok( $cart->weight,   '==', 0,       "weight is 0" );
+cmp_ok( $product->sku,   'eq', "SKU02", "product SKU02 returned" );
+
+# seed
+
+lives_ok { $cart = Cart->new } "new cart";
+
+throws_ok {
+    $cart->seed(
+        { sku => 'ONE', name => "One", price => 1, quantity => 1, weight => 2 }
+      )
+}
+qr/argument to seed must be an array reference/,
+  "fail adding arg that is not array reference";
+
+cmp_ok( $cart->count,    '==', 0, "count is 0" );
+cmp_ok( $cart->quantity, '==', 0, "quantity is 0" );
+cmp_ok( $cart->subtotal, '==', 0, "subtotal is 0" );
+cmp_ok( $cart->total,    '==', 0, "total is 0" );
+cmp_ok( $cart->weight,   '==', 0, "weight is 0" );
+
+$products = [
+    { sku => 'ONE', name => "One", price => 1, quantity => 1,   weight => 2 },
+    { sku => 'TWO', name => "Two", price => 2, quantity => 2.2, weight => 4 },
+];
+
+throws_ok { $cart->seed($products) } qr/isa.+quantity.+failed/,
+  "fail seed with 1 good and 1 bad product";
+
+cmp_ok( $cart->count,    '==', 0, "count is 0" );
+cmp_ok( $cart->quantity, '==', 0, "quantity is 0" );
+cmp_ok( $cart->subtotal, '==', 0, "subtotal is 0" );
+cmp_ok( $cart->total,    '==', 0, "total is 0" );
+cmp_ok( $cart->weight,   '==', 0, "weight is 0" );
+
+$products = [
+    { sku => 'ONE', name => "One", price => 1, quantity => 1, weight => 2 },
+    { sku => 'TWO', name => "Two", price => 2, quantity => 2, weight => 4 },
+];
+
+lives_ok { $cart->seed($products) } "seed 2 good products";
+
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 3,  "quantity is 3" );
+cmp_ok( $cart->subtotal, '==', 5,  "subtotal is 5" );
+cmp_ok( $cart->total,    '==', 5,  "total is 5" );
+cmp_ok( $cart->weight,   '==', 10, "weight is 10" );
+
+lives_ok { $cart = Cart->new } "new cart";
+
+lives_ok { $cart->add( sku => "old", name => "old", price => 50 ) }
+"add a product which seed should remove";
+
+cmp_ok( $cart->count,    '==', 1,  "count is 1" );
+cmp_ok( $cart->quantity, '==', 1,  "quantity is 1" );
+cmp_ok( $cart->subtotal, '==', 50, "subtotal is 50" );
+cmp_ok( $cart->total,    '==', 50, "total is 50" );
+
+lives_ok { $cart->seed($products) } "seed 2 good products";
+
+cmp_ok( $cart->count,    '==', 2,  "count is 2" );
+cmp_ok( $cart->quantity, '==', 3,  "quantity is 3" );
+cmp_ok( $cart->subtotal, '==', 5,  "subtotal is 5" );
+cmp_ok( $cart->total,    '==', 5,  "total is 5" );
+cmp_ok( $cart->weight,   '==', 10, "weight is 10" );
+
+done_testing;
