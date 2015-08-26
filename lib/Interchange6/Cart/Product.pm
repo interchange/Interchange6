@@ -328,11 +328,17 @@ sub is_canonical {
 # after cost changes we need to clear the cart subtotal/total
 # our own total is handled by the Costs role
 
-after 'clear_costs', 'cost_set', 'cost_push' => sub {
+after 'clear_costs', 'cost_set', 'cost_push', 'set_quantity' => sub {
     my $self = shift;
     if ( $self->cart ) {
         $self->cart->clear_subtotal;
         $self->cart->clear_total;
+    }
+};
+after 'set_quantity', 'set_weight' => sub {
+    my $self = shift;
+    if ( $self->cart ) {
+        $self->cart->clear_weight;
     }
 };
 
