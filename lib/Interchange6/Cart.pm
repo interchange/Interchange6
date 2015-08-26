@@ -87,7 +87,11 @@ has name => (
 
 =head2 products
 
-Called without args returns a hash reference of L<Interchange6::Cart::Product>. Should not normally be called with args but rather via the various L</PRODUCT METHODS> detailed below.
+Called without args returns a hash reference of L<Interchange6::Cart::Product>.
+
+Anything passed in as a value on object instantiation is ignored. To load
+products into a cart the preferred methods are L</add> and L</seed> which
+make sure appropriate arguements are passed.
 
 =cut
 
