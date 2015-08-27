@@ -1,5 +1,41 @@
 Revision history for Interchange6
 
+    * New public methods in Interchange6::Cart - product_delete, product_push,
+      product_set. These used to be 'private' methods.
+    * Interchange6::Cart sessions_id added isa Str
+    * Interchange6::Cart weight now returns zero instead of undef when there
+      are no products or if no products have weight defined
+    * Interchange6::Cart add, remove, seed and update methods have improved
+      argument checking
+    * Interchange6::Cart update always returns an array instead of
+      array/arrayref depending on context
+    * Interchange6::Cart::Product cart attribute isa added
+    * added clearer to Interchange6::Cart::Product discount_percent attribute
+    * move total attribute from Interchange6::Cart and
+      Interchange6::Cart::Product into Interchange6::Role::Costs
+    * clean up attribute clearer code into after modifiers for clarity
+    * make Interchange6::Role::Cost costs attribute immutable
+    * remove unnecessary code from Interchange6::Role::Cost apply_cost method
+    * move code from Interchange6::Role::Cost _calculate method into lazy
+      total attributes's builder method
+    * new cost_push method in Interchange6::Role::Cost replaces 'private' method
+
+    [BUG FIXES]
+
+    * Fix cost calculations using compound attribute
+
+    [DOCUMENTATION]
+
+    * Add reference to Interchange6::Cart::Product and
+      Interchangr6::Cart::Cost in Interchange6 pod
+    * Interchange6::Cart and Interchange6::Cart::Product pod now references
+      Interchange6::Role::Costs attributes and methods
+
+    [TESTS]
+
+    * Complete overhaul of tests: new unit and author subdirs. We now have
+      100% test coverage for the first time.
+
 0.086 Wed Jul  1 16:31:37 2015 CEST
 
     [ENHANCEMENTS]
