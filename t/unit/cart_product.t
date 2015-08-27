@@ -26,39 +26,27 @@ $args{price} = 23.45;
 lives_ok { $product = Product->new(%args) } "product created";
 
 $args{name} = '';
-throws_ok { $product = Product->new(%args) } qr/isa.+name.+failed/i,
-  "fail empty name";
+dies_ok { $product = Product->new(%args) } "fail empty name";
 
-$args{name} = 'x' x 256;
-throws_ok { $product = Product->new(%args) } qr/isa.+name.+failed/i,
-  "fail name with > 255 chars";
-
-$args{name} = 'x' x 255;
-lives_ok { $product = Product->new(%args) } "ok name with 255 chars";
+$args{name} = "My Name";
+lives_ok { $product = Product->new(%args) } "ok name My Name";
 
 $args{price} = 0;
 lives_ok { $product = Product->new(%args) } "ok price 0";
 
 $args{price} = -1;
-throws_ok { $product = Product->new(%args) } qr/isa.+price.+failed/i,
-  "fail negative price";
+dies_ok { $product = Product->new(%args) } "fail negative price";
 
 $args{price} = "w";
-throws_ok { $product = Product->new(%args) } qr/isa.+price.+failed/i,
-  "fail non-numeric price";
+dies_ok { $product = Product->new(%args) } "fail non-numeric price";
 
 $args{price} = 23.45;
 
 $args{sku} = '';
-throws_ok { $product = Product->new(%args) } qr/isa.+sku.+failed/i,
-  "fail sku empty";
+dies_ok { $product = Product->new(%args) } "fail sku empty";
 
-$args{sku} = "w" x 33;
-throws_ok { $product = Product->new(%args) } qr/isa.+sku.+failed/i,
-  "fail sku length > 32";
-
-$args{sku} = "w" x 32;
-lives_ok { $product = Product->new(%args) } "ok sku length 32";
+$args{sku} = "SKU01";
+lives_ok { $product = Product->new(%args) } "ok sku SKU01";
 
 dies_ok { $product->id("new") } "id is immutable";
 dies_ok { $product->cart("new") } "cart is immutable";
@@ -74,67 +62,53 @@ dies_ok { $product->uri("new") } "uri is immutable";
 dies_ok { $product->weight(10) } "weight is immutable";
 
 $args{id} = "ww";
-throws_ok { $product = Product->new(%args) } qr/isa.+id.+failed/i,
-  "fail id not numeric";
+dies_ok { $product = Product->new(%args) } "fail id not numeric";
 
 $args{id} = 12.3;
-throws_ok { $product = Product->new(%args) } qr/isa.+id.+failed/i,
-  "fail id not int";
+dies_ok { $product = Product->new(%args) } "fail id not int";
 
 delete $args{id};
 
 $args{cart} = "banana";
-throws_ok { $product = Product->new(%args) } qr/isa.+cart.+failed/i,
-  "fail bad cart type";
+dies_ok { $product = Product->new(%args) } "fail bad cart type";
 
 $args{cart} = Cart->new;
 lives_ok { $product = Product->new(%args) } "ok good cart type";
 
 lives_ok { $product->set_cart( $args{cart} ) } "ok set_cart";
 
-throws_ok { $product->set_cart("banana") } qr/isa.+cart.+failed/i,
-  "fail set_cart bad type";
+dies_ok { $product->set_cart("banana") } "fail set_cart bad type";
 
 delete $args{cart};
 
 lives_ok { $product->set_price(20) } "ok set_price";
 
-throws_ok { $product->set_price(-1) } qr/isa.+price.+failed/i,
-  "fail set_price(-1)";
+dies_ok { $product->set_price(-1) } "fail set_price(-1)";
 
-throws_ok { $product->set_price("new") } qr/isa.+price.+failed/i,
-  "fail set_price('new')";
+dies_ok { $product->set_price("new") } "fail set_price('new')";
 
 cmp_ok( $product->selling_price, '==', 20, "selling price same as price" );
 
 $args{selling_price} = undef;
-throws_ok { $product = Product->new(%args) } qr/isa.+selling_price.+failed/i,
-  "fail undef selling_price";
+dies_ok { $product = Product->new(%args) } "fail undef selling_price";
 
 $args{selling_price} = -1;
-throws_ok { $product = Product->new(%args) } qr/isa.+selling_price.+failed/i,
-  "fail -1 selling_price";
+dies_ok { $product = Product->new(%args) } "fail -1 selling_price";
 
 $args{selling_price} = "new";
-throws_ok { $product = Product->new(%args) } qr/isa.+selling_price.+failed/i,
-  "fail non-numeric selling_price";
+dies_ok { $product = Product->new(%args) } "fail non-numeric selling_price";
 
 $args{selling_price} = 10;
 lives_ok { $product = Product->new(%args) } "ok good selling_price";
 
 cmp_ok( $product->selling_price, '==', 10, "selling price now 10" );
 
-throws_ok { $product->set_selling_price("new") }
-qr/isa.+selling_price.+failed/i,
-  "fail set_selling_price('new')";
+dies_ok { $product->set_selling_price("new") }
+"fail set_selling_price('new')";
 
-throws_ok { $product->set_selling_price(-1) }
-qr/isa.+selling_price.+failed/i,
-  "fail set_selling_price(-1)";
+dies_ok { $product->set_selling_price(-1) } "fail set_selling_price(-1)";
 
-throws_ok { $product->set_selling_price(undef) }
-qr/isa.+selling_price.+failed/i,
-  "fail set_selling_price(undef)";
+dies_ok { $product->set_selling_price(undef) } "fail set_selling_price(undef)";
 
 lives_ok { $product->set_selling_price(20) } "ok set_selling_price(20)";
 cmp_ok( $product->selling_price, '==', 20, "selling price now 20" );
@@ -170,14 +144,11 @@ cmp_ok( $product->quantity, '==', 2,  "quantity is 2" );
 cmp_ok( $product->subtotal, '==', 40, "subtotal is 40" );
 cmp_ok( $product->total,    '==', 40, "total is 40" );
 
-throws_ok { $product->set_quantity(undef) } qr/isa.+quantity.+failed/i,
-  "fail set_quantity(undef)";
+dies_ok { $product->set_quantity(undef) } "fail set_quantity(undef)";
 
-throws_ok { $product->set_quantity(-1) } qr/isa.+quantity.+failed/i,
-  "fail set_quantity(-1)";
+dies_ok { $product->set_quantity(-1) } "fail set_quantity(-1)";
 
-throws_ok { $product->set_quantity(3.3) } qr/isa.+quantity.+failed/i,
-  "fail set_quantity(3.3)";
+dies_ok { $product->set_quantity(3.3) } "fail set_quantity(3.3)";
 
 lives_ok { $product->set_quantity(3) } "ok set_quantity(3)";
 
@@ -185,16 +156,11 @@ cmp_ok( $product->quantity, '==', 3,  "quantity is 3" );
 cmp_ok( $product->subtotal, '==', 60, "subtotal is 60" );
 cmp_ok( $product->total,    '==', 60, "total is 60" );
 
-$args{uri} = "w" x 256;
-throws_ok { $product = Product->new(%args) } qr/isa.+uri.+failed/i,
-  "fail uri length > 255";
-
-$args{uri} = "w" x 255;
-lives_ok { $product = Product->new(%args) } "ok uri length 255";
+$args{uri} = "someuri";
+lives_ok { $product = Product->new(%args) } "ok uri someuri";
 
 $args{weight} = "w";
-throws_ok { $product = Product->new(%args) } qr/isa.+weight.+failed/i,
-  "fail weight non-numeric";
+dies_ok { $product = Product->new(%args) } "fail weight non-numeric";
 
 $args{weight} = 12.34;
 lives_ok { $product = Product->new(%args) } "ok weight 12.34";

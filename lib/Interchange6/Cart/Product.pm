@@ -4,8 +4,11 @@ package Interchange6::Cart::Product;
 
 use strict;
 use Moo;
+use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
-use Interchange6::Types;
+use Types::Standard qw/Defined HashRef InstanceOf Int Num Str Undef/;
+use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
+use Types::Common::String qw/NonEmptyStr/;
 with 'Interchange6::Role::Costs';
 
 use namespace::clean;
@@ -51,7 +54,7 @@ A reference to the Cart object that this Cart::Product belongs to.
 
 has cart => (
     is      => 'ro',
-    isa     => AnyOf [ Undef, InstanceOf ['Interchange6::Cart'] ],
+    isa     =>  Undef | InstanceOf ['Interchange6::Cart'],
     default => undef,
     writer  => 'set_cart',
 );
@@ -64,7 +67,7 @@ Product name is required.
 
 has name => (
     is       => 'ro',
-    isa      => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    isa      => Defined & NonEmptyStr,
     required => 1,
 );
 
@@ -84,7 +87,7 @@ Price is required, because you want to maintain the price that was valid at the 
 
 has price => (
     is        => 'ro',
-    isa       => AnyOf [ PositiveNum, Zero ],
+    isa       => PositiveOrZeroNum,
     required  => 1,
     writer    => 'set_price',
 );
@@ -103,7 +106,7 @@ Selling price is the price after group pricing, tier pricing or promotional disc
 
 has selling_price => (
     is        => 'lazy',
-    isa       => AnyOf [ PositiveNum, Zero ],
+    isa       => PositiveOrZeroNum,
     writer    => 'set_selling_price',
 );
 
@@ -147,7 +150,7 @@ than zero. Default for quantity is 1.
 
 has quantity => (
     is      => 'ro',
-    isa     => AllOf [ PositiveNum, Int ],
+    isa     => PositiveInt,
     default => 1,
     writer  => 'set_quantity',
 );
@@ -166,7 +169,7 @@ Unique product identifier is required.
 
 has sku => (
     is       => 'ro',
-    isa      => AllOf [ Defined, NotEmpty, VarChar [32] ],
+    isa      => NonEmptyStr,
     required => 1,
 );
 
@@ -208,7 +211,7 @@ Product uri
 
 has uri => (
     is  => 'ro',
-    isa => VarChar [255],
+    isa => Str,
 );
 
 =head2 weight
@@ -219,7 +222,7 @@ Weight of quantity 1 of this product.
 
 has weight => (
     is     => 'ro',
-    isa    => AnyOf [ Undef, Num ],
+    isa    => Num,
     writer => 'set_weight',
 );
 

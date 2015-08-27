@@ -31,41 +31,31 @@ dies_ok { $cart->weight(1) } "weight is immutable";
 # id
 
 $args{id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/isa.+id.+failed/i,
-  "fail new with undef id";
+throws_ok { $cart = Cart->new(%args) } qr/id/, "fail new with undef id";
 
 $args{id} = '34w';
 lives_ok { $cart = Cart->new(%args) } "ok new with defined id";
 
-throws_ok { $cart->set_id(undef) } qr/isa.+id.+failed/i, "fail set_id(undef)";
+throws_ok { $cart->set_id(undef) } qr/id/, "fail set_id(undef)";
 
 lives_ok { $cart->set_id(12) } "ok set_id(12)";
 
 # name
 
 $args{name} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
-  "fail new with undef name";
+throws_ok { $cart = Cart->new(%args) } qr/name/, "fail new with undef name";
 
 $args{name} = '';
-throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
-  "fail new with empty name";
+throws_ok { $cart = Cart->new(%args) } qr/name/, "fail new with empty name";
 
-$args{name} = "w" x 256;
-throws_ok { $cart = Cart->new(%args) } qr/isa.+name.+failed/i,
-  "fail new with name length > 255";
+$args{name} = "Cart";
+lives_ok { $cart = Cart->new(%args) } "ok new with name Cart";
 
-$args{name} = "w" x 255;
-lives_ok { $cart = Cart->new(%args) } "ok new with name length 255";
+throws_ok { $cart->rename(undef) } qr/name/, "fail rename(undef)";
 
-throws_ok { $cart->rename(undef) } qr/isa.+name.+failed/i, "fail rename(undef)";
+throws_ok { $cart->rename('') } qr/name/, "fail rename('')";
 
-throws_ok { $cart->rename('') } qr/isa.+name.+failed/i, "fail rename('')";
-
-throws_ok { $cart->rename( "x" x 256 ) } qr/isa.+name.+failed/i,
-  "fail rename('x' x 256)";
-
-lives_ok { $cart->rename( "x" x 255 ) } "ok rename('x' x 255)";
+lives_ok { $cart->rename( "NewName" ) } "ok rename('NewName')";
 
 # products
 
@@ -230,13 +220,13 @@ cmp_ok( $cart->weight,   '==', 0, "weight is 0" );
 # sessions_id
 
 $args{sessions_id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/isa.+sessions_id.+failed/i,
+throws_ok { $cart = Cart->new(%args) } qr/sessions_id/,
   "fail new with undef sessions_id";
 
 $args{sessions_id} = '34w';
 lives_ok { $cart = Cart->new(%args) } "ok new with defined sessions_id";
 
-throws_ok { $cart->set_sessions_id(undef) } qr/isa.+sessions_id.+failed/i,
+throws_ok { $cart->set_sessions_id(undef) } qr/sessions_id/,
   "fail set_sessions_id(undef)";
 
 lives_ok { $cart->set_sessions_id(12) } "ok set_sessions_id(12)";
@@ -250,13 +240,13 @@ ok( !defined $cart->sessions_id, "sessions_id is undef" );
 # users_id
 
 $args{users_id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/isa.+users_id.+failed/i,
+throws_ok { $cart = Cart->new(%args) } qr/users_id/,
   "fail new with undef users_id";
 
 $args{users_id} = '34w';
 lives_ok { $cart = Cart->new(%args) } "ok new with defined users_id";
 
-throws_ok { $cart->set_users_id(undef) } qr/isa.+users_id.+failed/i,
+throws_ok { $cart->set_users_id(undef) } qr/users_id/,
   "fail set_users_id(undef)";
 
 lives_ok { $cart->set_users_id(12) } "ok set_users_id(12)";
@@ -352,7 +342,7 @@ throws_ok { $cart->update("SKU01") } qr/quantity not supplied.+SKU01/,
 
 throws_ok { $cart->update(undef) } qr/sku not defined/, "fail update sku undef";
 
-throws_ok { $cart->update( SKU01 => 2.3 ) } qr/isa.+quantity.+failed/,
+throws_ok { $cart->update( SKU01 => 2.3 ) } qr/quantity/,
   "fail update with non-integer quantity";
 
 lives_ok { @products = $cart->update( SKU01 => 3 ) }
@@ -442,7 +432,7 @@ $products = [
     { sku => 'TWO', name => "Two", price => 2, quantity => 2.2, weight => 4 },
 ];
 
-throws_ok { $cart->seed($products) } qr/isa.+quantity.+failed/,
+throws_ok { $cart->seed($products) } qr/quantity/,
   "fail seed with 1 good and 1 bad product";
 
 cmp_ok( $cart->count,    '==', 0, "count is 0" );

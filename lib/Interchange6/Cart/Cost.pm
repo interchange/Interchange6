@@ -4,7 +4,8 @@ package Interchange6::Cart::Cost;
 
 use strict;
 use Moo;
-use Interchange6::Types;
+use Types::Standard qw/Bool Defined Int Num/;
+use Types::Common::String qw/NonEmptyStr/;
 
 use namespace::clean;
 
@@ -37,7 +38,7 @@ Unique name is required.
 
 has name => (
     is       => 'ro',
-    isa      => AllOf [ Defined, NotEmpty, VarChar [64] ],
+    isa      => NonEmptyStr,
     required => 1,
 );
 
@@ -49,7 +50,7 @@ Label for display. Default is same value as label.
 
 has label => (
     is  => 'lazy',
-    isa => AllOf [ Defined, NotEmpty, VarChar [64] ],
+    isa => NonEmptyStr,
 );
 
 sub _build_label {
@@ -65,7 +66,7 @@ Boolean defaults to 0. If true then L<amount> is relative to L<object subtotal|I
 
 has relative => (
     is      => 'ro',
-    isa     => AllOf [ Defined, Bool ],
+    isa     => Defined & Bool,
     default => 0,
 );
 
@@ -77,7 +78,7 @@ Boolean defaults to 0. If true signifies that the cost is already included in th
 
 has inclusive => (
     is      => 'ro',
-    isa     => AllOf [ Defined, Bool ],
+    isa     => Defined & Bool,
     default => 0,
 );
 
@@ -92,7 +93,7 @@ given as to what the result might be.
 
 has compound => (
     is      => 'ro',
-    isa     => AllOf [ Defined, Bool ],
+    isa     => Defined & Bool,
     default => 0,
 );
 
@@ -104,7 +105,7 @@ Required amount of the cost. This is the absolute cost unless L</relative> is tr
 
 has amount => (
     is      => 'ro',
-    isa     => AllOf [ Defined, Num ],
+    isa     =>  Defined & Num,
     required => 1,
 );
 

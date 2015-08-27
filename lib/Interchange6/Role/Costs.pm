@@ -7,7 +7,7 @@ use Scalar::Util 'blessed';
 use Moo::Role;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
-use Interchange6::Types;
+use Types::Standard qw/ArrayRef InstanceOf Num/;
 
 use namespace::clean;
 

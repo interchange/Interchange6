@@ -11,14 +11,14 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 use strict;
 use Carp;
 use DateTime;
-use Interchange6::Cart::Cost;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
 use Moo;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
-use Interchange6::Types;
+use Types::Standard qw/ArrayRef InstanceOf Str/;
+use Types::Common::String qw/NonEmptyStr/;
 
 with 'Interchange6::Role::Costs';
 
@@ -80,7 +80,7 @@ The cart name. Default is 'main'.
 
 has name => (
     is      => 'ro',
-    isa     => AllOf [ Defined, NotEmpty, VarChar [255] ],
+    isa     => NonEmptyStr,
     default => 'main',
     writer  => 'rename',
 );

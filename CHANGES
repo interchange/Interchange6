@@ -1,5 +1,6 @@
 Revision history for Interchange6
 
+    * Switch to Type::Tiny so types are Moose-compatible
     * New public methods in Interchange6::Cart - product_delete, product_push,
       product_set. These used to be 'private' methods.
     * Interchange6::Cart sessions_id added isa Str
