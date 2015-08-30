@@ -6,11 +6,11 @@ Interchange6 - Open Source Shop Machine
 
 =head1 VERSION
 
-0.086
+0.100
 
 =cut
 
-our $VERSION = '0.086';
+our $VERSION = '0.100';
 
 =head1 DESCRIPTION
 
