@@ -2,7 +2,7 @@ NAME
     Interchange6 - Open Source Shop Machine
 
 VERSION
-    0.086
+    0.100
 
 DESCRIPTION
     Interchange6, the Open Source Shop Machine, is the Modern Perl ecosystem
@@ -13,6 +13,15 @@ DESCRIPTION
 
     Carts
         Interchange6::Cart
+
+    Cart Products
+        Interchange6::Cart::Product
+
+    Cart Costs
+        Interchangr6::Cart::Cost
+
+        Cart costs can be applied to both Carts and Cart Products and are
+        integrated into each via the role Interchange6::Role::Costs.
 
     To build your own business website, please take a look at our Dancer
     plugin: Dancer::Plugin::Interchange6.

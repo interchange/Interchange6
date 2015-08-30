@@ -1,5 +1,11 @@
 Revision history for Interchange6
 
+0.100 Sun Aug 30 09:21:27 2015 CEST
+
+    This release features a code and test overhaul by Peter Mottram.
+
+    [ENHANCEMENTS]
+
     * Switch to Type::Tiny so types are Moose-compatible
     * New public methods in Interchange6::Cart - product_delete, product_push,
       product_set. These used to be 'private' methods.
