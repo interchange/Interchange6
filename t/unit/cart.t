@@ -343,7 +343,9 @@ throws_ok { $cart->update("SKU01") } qr/quantity not supplied.+SKU01/,
 throws_ok { $cart->update(undef) } qr/sku not defined/, "fail update sku undef";
 
 throws_ok { $cart->update( SKU01 => 2.3 ) } qr/quantity/,
-  "fail update with non-integer quantity";
+  "fail update with non-integer quantity"
+   or diag "SKU01 quantity set 2.3 is: "
+   . $cart->product_get($cart->product_index( sub { $_->sku eq 'SKU01' } ))->quantity;
 
 lives_ok { @products = $cart->update( SKU01 => 3 ) }
 "set SKU01 qty to what it already is in cart";
