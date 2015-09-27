@@ -1,5 +1,13 @@
 Revision history for Interchange6
 
+0.101 Sun Sep 27 16:50:07 2015 CEST
+
+    This release tries to fix the errors revealed by
+    the return of CPAN testers:
+
+    * Add debug code to t/unit/cart.t (Peter Mottram, GH #28).
+    * Set minimum Perl version to 5.14 (Peter Mottram).
+
 0.100 Sun Aug 30 09:21:27 2015 CEST
 
     This release features a code and test overhaul by Peter Mottram.
