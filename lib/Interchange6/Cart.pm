@@ -475,6 +475,9 @@ sub update {
         die "quantity not supplied as arg to update for sku $sku"
           unless defined $qty;
 
+        die "quantity must be a positive integer or zero"
+          unless $qty =~ /^\d+$/;
+
         unless ( $product = $self->find($sku) ) {
             die "Product for $sku not found in cart.";
         }
