@@ -1,5 +1,15 @@
 Revision history for Interchange6
 
+0.102 Tue Sep 29 08:20:58 2015 CEST
+
+    [TESTS]
+
+    * Add extra check of quantity in Cart->update (Peter Mottram, GH #28).
+
+    [DOCUMENTATION]
+
+    * Fix typo in Interchange6::Cart::Cost link (Stefan Hornburg).
+
 0.101 Sun Sep 27 16:50:07 2015 CEST
 
     This release tries to fix the errors revealed by
