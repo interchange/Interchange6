@@ -32,7 +32,7 @@ L<Interchange6::Cart::Product>
 
 =item Cart Costs
 
-L<Interchangr6::Cart::Cost>
+L<Interchange6::Cart::Cost>
 
 Cart costs can be applied to both Carts and Cart Products and are integrated
 into each via the role L<Interchange6::Role::Costs>.
