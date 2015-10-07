@@ -57,6 +57,7 @@ has cart => (
     isa     =>  Undef | InstanceOf ['Interchange6::Cart'],
     default => undef,
     writer  => 'set_cart',
+    weak_ref => 1,
 );
 
 =head2 name
