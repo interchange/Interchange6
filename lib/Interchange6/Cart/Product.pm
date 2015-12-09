@@ -6,7 +6,7 @@ use strict;
 use Moo;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
-use Types::Standard qw/Defined HashRef InstanceOf Int Num Str Undef/;
+use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Num Str Undef/;
 use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
 use Types::Common::String qw/NonEmptyStr/;
 with 'Interchange6::Role::Costs';
@@ -88,7 +88,7 @@ Price is required, because you want to maintain the price that was valid at the 
 
 has price => (
     is        => 'ro',
-    isa       => PositiveOrZeroNum,
+    isa       => PositiveOrZeroNum | HasMethods["value"],
     required  => 1,
     writer    => 'set_price',
 );
@@ -107,7 +107,7 @@ Selling price is the price after group pricing, tier pricing or promotional disc
 
 has selling_price => (
     is        => 'lazy',
-    isa       => PositiveOrZeroNum,
+    isa       => PositiveOrZeroNum | HasMethods["value"],
     writer    => 'set_selling_price',
 );
 
