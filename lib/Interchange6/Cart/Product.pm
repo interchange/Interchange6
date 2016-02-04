@@ -6,7 +6,7 @@ use strict;
 use Moo;
 use MooseX::CoverableModifiers;
 use MooX::HandlesVia;
-use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Num Str Undef/;
+use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
 use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
 use Types::Common::String qw/NonEmptyStr/;
 with 'Interchange6::Role::Costs';
@@ -54,7 +54,7 @@ A reference to the Cart object that this Cart::Product belongs to.
 
 has cart => (
     is      => 'ro',
-    isa     =>  Undef | InstanceOf ['Interchange6::Cart'],
+    isa     =>  Maybe[InstanceOf ['Interchange6::Cart']],
     default => undef,
     writer  => 'set_cart',
     weak_ref => 1,
@@ -68,7 +68,7 @@ Product name is required.
 
 has name => (
     is       => 'ro',
-    isa      => Defined & NonEmptyStr,
+    isa      => NonEmptyStr,
     required => 1,
 );
 
@@ -88,7 +88,7 @@ Price is required, because you want to maintain the price that was valid at the 
 
 has price => (
     is        => 'ro',
-    isa       => PositiveOrZeroNum | HasMethods["value"],
+    isa       => PositiveOrZeroNum,
     required  => 1,
     writer    => 'set_price',
 );
@@ -107,7 +107,7 @@ Selling price is the price after group pricing, tier pricing or promotional disc
 
 has selling_price => (
     is        => 'lazy',
-    isa       => PositiveOrZeroNum | HasMethods["value"],
+    isa       => PositiveOrZeroNum,
     writer    => 'set_selling_price',
 );
 

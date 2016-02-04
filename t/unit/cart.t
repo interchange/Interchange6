@@ -264,7 +264,8 @@ throws_ok { $cart->add(undef) } qr/undefined/i, "fail add undef";
 throws_ok { $cart->add('') } qr/argument to add should be hash or hashref/,
   "fail add scalar";
 
-package TestObj {
+{
+    package TestObj;
     use Moo;
     has id => ( is => 'ro' );
 }

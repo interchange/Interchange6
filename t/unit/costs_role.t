@@ -7,13 +7,14 @@ use Test::More;
 use Test::Exception;
 use aliased 'Interchange6::Cart::Cost';
 
-package CostsConsumer {
+{
+    package CostsConsumer;
     use Moo;
     with 'Interchange6::Role::Costs';
     use namespace::clean;
 
     has subtotal => ( is => 'ro' );
-};
+}
 
 my ( $obj, $cost, @costs );
 
