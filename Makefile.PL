@@ -15,7 +15,7 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'aliased'    => 0,
         'Test::More' => 0,
-        'Test::Most' => 0,
+        'Test::Exception' => 0,
         # warning feature was introduced in this release (GH #25)
         'Test::Warnings' => '0.005',
     },
