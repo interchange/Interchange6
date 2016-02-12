@@ -5,7 +5,7 @@ package Interchange6::Cart::Product;
 use strict;
 use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
 use Types::Common::String qw/NonEmptyStr/;
-use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
+use Types::Standard qw/Bool CodeRef Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
 
 use Moo;
 use MooX::HandlesVia;
@@ -257,6 +257,25 @@ has extra => (
     },
 );
 
+=head2 combine
+
+Indicate whether products with the same SKU should be combined in the Cart
+
+=over 
+
+=item Writer: C<combine>
+
+=back
+
+=cut
+
+has combine => (
+    is      => 'ro',
+    isa     => CodeRef | Bool,
+    default => 1,
+);
+
+
 =head1 METHODS
 
 See also L<Interchange6::Role::Costs/METHODS>.
@@ -327,6 +346,27 @@ Returns 0 if L</canonical_sku> is defined else 1.
 
 sub is_canonical {
     return defined shift->canonical_sku ? 0 : 1;
+}
+
+=head2 should_combine_by_sku
+
+Determines whether a product should be combined by sku based on the 
+value of L</combine>.
+
+If L</combine> isa CodeRef the result of applying that CodeRef is returned
+otherwise:
+   Returns 0 if a product should not be combined
+   Returns 1 if a product should be combined
+
+=cut
+
+sub should_combine_by_sku {
+   my ($self) = @_;
+
+   return $self->combine->()
+      if ref $self->combine eq 'CODE';
+
+   return $self->combine;
 }
 
 # after cost changes we need to clear the cart subtotal/total
