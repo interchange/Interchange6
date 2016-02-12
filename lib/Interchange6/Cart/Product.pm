@@ -3,14 +3,14 @@
 package Interchange6::Cart::Product;
 
 use strict;
-use Moo;
-use MooseX::CoverableModifiers;
-use MooX::HandlesVia;
-use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
 use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
 use Types::Common::String qw/NonEmptyStr/;
-with 'Interchange6::Role::Costs';
+use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
 
+use Moo;
+use MooX::HandlesVia;
+use MooseX::CoverableModifiers;
+with 'Interchange6::Role::Costs';
 use namespace::clean;
 
 =head1 NAME 
