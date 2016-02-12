@@ -309,7 +309,7 @@ sub add {
 
     $index = $self->product_index( sub { $_->sku eq $product->sku } );
 
-    if ( $index >= 0 ) {
+    if ( $index >= 0 && $product->should_combine_by_sku ) {
 
         # product already exists in cart so we need to add new quantity to old
 
