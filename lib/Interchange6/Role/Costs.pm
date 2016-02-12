@@ -2,13 +2,14 @@
 
 package Interchange6::Role::Costs;
 
+use strict;
 use Interchange6::Cart::Cost;
 use Scalar::Util 'blessed';
-use Moo::Role;
-use MooseX::CoverableModifiers;
-use MooX::HandlesVia;
 use Types::Standard qw/ArrayRef InstanceOf Num/;
 
+use Moo::Role;
+use MooX::HandlesVia;
+use MooseX::CoverableModifiers;
 use namespace::clean;
 
 =head1 ATTRIBUTES

@@ -3,10 +3,10 @@
 package Interchange6::Cart::Cost;
 
 use strict;
-use Moo;
-use Types::Standard qw/Bool Defined Int Num/;
 use Types::Common::String qw/NonEmptyStr/;
+use Types::Standard qw/Bool Defined Int Num/;
 
+use Moo;
 use namespace::clean;
 
 =head1 NAME 

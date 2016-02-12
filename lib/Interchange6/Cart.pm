@@ -14,14 +14,13 @@ use DateTime;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
-use Moo;
-use MooseX::CoverableModifiers;
-use MooX::HandlesVia;
-use Types::Standard qw/ArrayRef InstanceOf Str/;
 use Types::Common::String qw/NonEmptyStr/;
+use Types::Standard qw/ArrayRef InstanceOf Str/;
 
+use Moo;
+use MooX::HandlesVia;
+use MooseX::CoverableModifiers;
 with 'Interchange6::Role::Costs';
-
 use namespace::clean;
 
 =head1 DESCRIPTION
