@@ -151,8 +151,9 @@ sub _build_subtotal {
     my $self = shift;
 
     my $subtotal = 0;
-
-    map { $subtotal += $_->total } $self->products_array;
+    foreach my $product ( $self->products_array ) {
+        $subtotal += $product->total;
+    }
 
     return sprintf( "%.2f", $subtotal );
 }
@@ -202,12 +203,13 @@ has weight => (
 
 sub _build_weight {
     my $self = shift;
-    my $weight;
+    
+    my $weight = 0;
+    foreach my $product ( grep { defined $_->weight } $self->products_array ) {
+        $weight += $product->weight;
+    }
 
-    map { $weight += $_->weight * $_->quantity }
-      grep { defined $_->weight } $self->products_array;
-
-    return $weight ? $weight : 0;
+    return $weight;
 }
 
 =head1 METHODS
@@ -376,9 +378,11 @@ which is commonly used as number of products. If you have 5 apples and 6 pears i
 
 sub quantity {
     my $self = shift;
-    my $qty  = 0;
-
-    map { $qty += $_->quantity } $self->products_array;
+    
+    my $qty = 0;
+    foreach my $product ( $self->products_array ) {
+        $qty += $product->quantity;
+    }
 
     return $qty;
 }
