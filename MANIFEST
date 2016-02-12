@@ -11,6 +11,7 @@ MANIFEST.SKIP
 README
 t/README
 t/00-base.t
+t/01-combine-by-sku.t
 t/author/manifest.t
 t/author/pod-coverage.t
 t/author/pod.t
