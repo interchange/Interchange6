@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    0.102
+    0.103
 
 DESCRIPTION
 
@@ -24,7 +24,7 @@ DESCRIPTION
 
     Cart Costs
 
-      Interchangr6::Cart::Cost
+      Interchange6::Cart::Cost
 
       Cart costs can be applied to both Carts and Cart Products and are
       integrated into each via the role Interchange6::Role::Costs.
@@ -41,6 +41,10 @@ CAVEATS
 
     Please anticipate API changes in this early state of development.
 
+ACKNOWLEDGEMENTS
+
+    Hunter McMillen, GH #31, #33.
+
 AUTHORS
 
     Stefan Hornburg (Racke), racke@linuxia.de
@@ -49,7 +53,7 @@ AUTHORS
 
 LICENSE AND COPYRIGHT
 
-    Copyright 2011-2015 Stefan Hornburg (Racke).
+    Copyright 2011-2016 Stefan Hornburg (Racke).
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of either: the GNU General Public License as published

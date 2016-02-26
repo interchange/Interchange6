@@ -1,5 +1,36 @@
 Revision history for Interchange6
 
+0.103 Fri Feb 26 10:45:42 2016 CET
+
+    [ENHANCEMENTS]
+
+    * Product class attributes price/selling_price also allow
+      HasMethods["value"] to support Interchange6::Currency
+      (Peter Mottram).
+
+    [BUG FIXES]
+
+    * Bump prerequisite on Type::Tiny to force version that
+      includes Types::Common::Numeric.
+    * Make cart attribute of Product class a weak reference
+      (Peter Mottram).
+
+    [CLEANUPS]
+
+    * Replace map expressions that aren't doing list transformations
+      (Hunter McMillen, GH #30, #33).
+    * Cleanup imports as per Moo recommendations
+      (Hunter McMillen, GH #29, #31).
+
+    [COMPAT]
+
+    * Changes to lower minimum Perl version from 5.14 to 5.10
+      (Peter Mottram).
+
+    [TESTS]
+
+    * Travis updates (Peter Mottram, Stefan Hornburg/Racke)
+
 0.102 Tue Sep 29 08:20:58 2015 CEST
 
     [TESTS]
