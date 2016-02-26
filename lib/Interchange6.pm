@@ -51,6 +51,10 @@ and price caching.
 
 Please anticipate API changes in this early state of development.
 
+=head1 ACKNOWLEDGEMENTS
+
+Hunter McMillen, GH #31, #33.
+
 =head1 AUTHORS
 
 Stefan Hornburg (Racke), C<racke@linuxia.de>
