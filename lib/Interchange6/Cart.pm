@@ -14,6 +14,7 @@ use DateTime;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
+use Types::Common::Numeric qw/PositiveOrZeroInt/;
 use Types::Common::String qw/NonEmptyStr/;
 use Types::Standard qw/ArrayRef InstanceOf Str/;
 
@@ -475,11 +476,8 @@ sub update {
 
         die "sku not defined in arg to update" unless defined $sku;
 
-        die "quantity not supplied as arg to update for sku $sku"
-          unless defined $qty;
-
-        die "quantity must be a positive integer or zero"
-          unless $qty =~ /^\d+$/;
+        PositiveOrZeroInt->check($qty)
+          or die "quantity argument to update must be positive integer or zero";
 
         unless ( $product = $self->find($sku) ) {
             die "Product for $sku not found in cart.";

@@ -338,15 +338,18 @@ lives_ok { $cart->update } "update with no args does nothing";
 throws_ok { $cart->update( "badsku" => 1 ) } qr/badsku not found in cart/,
   "fail update with bad sku";
 
-throws_ok { $cart->update("SKU01") } qr/quantity not supplied.+SKU01/,
+throws_ok { $cart->update("SKU01") }
+qr/quantity argument to update must be positive integer or zero/,
   "fail update no quantity";
 
 throws_ok { $cart->update(undef) } qr/sku not defined/, "fail update sku undef";
 
-throws_ok { $cart->update( SKU01 => 2.3 ) } qr/quantity/,
+throws_ok { $cart->update( SKU01 => 2.3 ) }
+qr/quantity argument to update must be positive integer or zero/,
   "fail update with non-integer quantity"
-   or diag "SKU01 quantity set 2.3 is: "
-   . $cart->product_get($cart->product_index( sub { $_->sku eq 'SKU01' } ))->quantity;
+  or diag "SKU01 quantity set 2.3 is: "
+  . $cart->product_get( $cart->product_index( sub { $_->sku eq 'SKU01' } ) )
+  ->quantity;
 
 lives_ok { @products = $cart->update( SKU01 => 3 ) }
 "set SKU01 qty to what it already is in cart";
