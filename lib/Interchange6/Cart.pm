@@ -470,8 +470,7 @@ sub update {
 
         die "sku not defined in arg to update" unless defined $sku;
 
-        PositiveOrZeroInt->check($qty)
-          or die "quantity argument to update must be positive integer or zero";
+        defined($qty) or die "quantity argument to update must be defined";
 
         unless ( $product = $self->find($sku) ) {
             die "Product for $sku not found in cart.";

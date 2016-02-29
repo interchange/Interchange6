@@ -150,8 +150,17 @@ than zero. Default for quantity is 1.
 =cut
 
 has quantity => (
-    is      => 'ro',
-    isa     => PositiveInt,
+    is => 'ro',
+    # https://github.com/interchange/Interchange6/issues/28
+    # Tupe::Tiny::XS sometimes incorrectly passes Int assertion for
+    # non-integer values such as 2.3 so we can't just do:
+    #    isa => PositiveInt
+    # but if we stringify the value then things work as expected. Huh?
+    # Also prevent uninitialized warning in case value is undef.
+    isa => sub {
+        no warnings 'uninitialized';
+        PositiveInt->assert_valid("$_[0]");
+    },
     default => 1,
     writer  => 'set_quantity',
 );

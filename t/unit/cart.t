@@ -339,17 +339,20 @@ throws_ok { $cart->update( "badsku" => 1 ) } qr/badsku not found in cart/,
   "fail update with bad sku";
 
 throws_ok { $cart->update("SKU01") }
-qr/quantity argument to update must be positive integer or zero/,
-  "fail update no quantity";
+qr/quantity argument to update must be defined/, "fail update no quantity";
 
 throws_ok { $cart->update(undef) } qr/sku not defined/, "fail update sku undef";
 
-throws_ok { $cart->update( SKU01 => 2.3 ) }
-qr/quantity argument to update must be positive integer or zero/,
+# NOTE: this is the test which fails if we simply use 'isa => PositiveInt'
+# for Cart::Products's quantity attribute.
+# https://github.com/interchange/Interchange6/issues/28
+throws_ok { $cart->update( SKU01 => 2.3 ) } qr/Must be a positive integer/,
   "fail update with non-integer quantity"
-  or diag "SKU01 quantity set 2.3 is: "
-  . $cart->product_get( $cart->product_index( sub { $_->sku eq 'SKU01' } ) )
-  ->quantity;
+  or diag(
+    "SKU01 quantity set 2.3 is: ",
+    $cart->product_get( $cart->product_index( sub { $_->sku eq 'SKU01' } ) )
+      ->quantity
+  );
 
 lives_ok { @products = $cart->update( SKU01 => 3 ) }
 "set SKU01 qty to what it already is in cart";
