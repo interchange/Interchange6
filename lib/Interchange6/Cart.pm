@@ -106,6 +106,7 @@ has products => (
         clear          => 'clear',
         count          => 'count',
         is_empty       => 'is_empty',
+        product_first  => 'first',
         product_get    => 'get',
         product_index  => 'first_index',
         products_array => 'elements',
@@ -334,7 +335,7 @@ sub add {
 
 =head2 find
 
-Searches for an cart product with the given SKU.
+Searches for a cart product with the given SKU.
 Returns cart product in case of sucess or undef on failure.
 
   if ($product = $cart->find(9780977920174)) {
@@ -345,14 +346,7 @@ Returns cart product in case of sucess or undef on failure.
 
 sub find {
     my ( $self, $sku ) = @_;
-
-    for my $cartproduct ( $self->products_array ) {
-        if ( $sku eq $cartproduct->sku ) {
-            return $cartproduct;
-        }
-    }
-
-    return undef;
+    $self->product_first( sub { $sku eq $_->sku } );
 }
 
 =head2 has_subtotal
