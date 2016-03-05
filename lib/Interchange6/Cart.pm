@@ -10,7 +10,6 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
 use strict;
 use Carp;
-use DateTime;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;

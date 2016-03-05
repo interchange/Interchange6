@@ -24,7 +24,6 @@ WriteMakefile(
         'Moo' => '1.004005',
         'MooseX::CoverableModifiers' => 0.30,
         'MooX::HandlesVia' => 0,
-        'DateTime' => 0,
         'Type::Tiny' => '0.038',
     },
     dist          => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
