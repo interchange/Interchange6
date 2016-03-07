@@ -2,13 +2,11 @@ package Interchange6::Role::Costs;
 
 use Carp;
 use Interchange6::Cart::Cost;
-use Scalar::Util 'blessed';
 use Interchange6::Types -types;
 
 use Moo::Role;
 use MooX::HandlesVia;
 use MooseX::CoverableModifiers;
-use namespace::clean;
 
 =head1 ATTRIBUTES
 
