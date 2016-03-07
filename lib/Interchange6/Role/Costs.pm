@@ -1,8 +1,6 @@
-# Interchange6::Role::Costs - Interchange6 costs role for carts and products
-
 package Interchange6::Role::Costs;
 
-use strict;
+use Carp;
 use Interchange6::Cart::Cost;
 use Scalar::Util 'blessed';
 use Interchange6::Types -types;
@@ -164,10 +162,10 @@ sub apply_cost {
     my $self = shift;
     my $cost = $_[0];
 
-    die "argument to apply_cost undefined" unless defined($cost);
+    croak "argument to apply_cost undefined" unless defined($cost);
 
     if ( blessed($cost) ) {
-        die( "Supplied cost not an Interchange6::Cart::Cost : " . ref($cost) )
+        croak( "Supplied cost not an Interchange6::Cart::Cost : " . ref($cost) )
           unless $cost->isa('Interchange6::Cart::Cost');
     }
     else {
@@ -216,7 +214,7 @@ sub cost {
         }
     }
     else {
-        die "Either position or name required as argument to cost";
+        croak "Either position or name required as argument to cost";
     }
 
     if ( defined $cost ) {
@@ -224,7 +222,7 @@ sub cost {
         $self->total;
     }
     else {
-        die "Bad argument to cost: " . $loc;
+        croak "Bad argument to cost: " . $loc;
     }
 
     return $cost->current_amount;
