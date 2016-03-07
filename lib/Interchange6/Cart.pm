@@ -1,5 +1,3 @@
-# Interchange6::Cart - Interchange6 cart class
-
 package Interchange6::Cart;
 
 =head1 NAME 
@@ -8,11 +6,7 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
 =cut
 
-use strict;
 use Carp;
-use Interchange6::Cart::Product;
-use Scalar::Util 'blessed';
-use Try::Tiny;
 use Interchange6::Types -types;
 
 use Moo;
