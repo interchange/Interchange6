@@ -8,6 +8,7 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
 use Carp;
 use Interchange6::Types -types;
+use Interchange6::Cart::Product;
 
 use Moo;
 use MooX::HandlesVia;
