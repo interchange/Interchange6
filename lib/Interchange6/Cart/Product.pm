@@ -160,7 +160,7 @@ has quantity => (
     writer  => 'set_quantity',
 );
 
-after quantity => sub {
+after set_quantity => sub {
     my $self = shift;
     $self->clear_subtotal;
     $self->clear_total;
