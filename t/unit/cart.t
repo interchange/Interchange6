@@ -261,7 +261,7 @@ throws_ok { $cart->add } qr/undefined arg/i, "fail add with no args";
 
 throws_ok { $cart->add(undef) } qr/undefined/i, "fail add undef";
 
-throws_ok { $cart->add('') } qr/argument to add should be hash or hashref/,
+throws_ok { $cart->add('') } qr/Single parameters to new\(\) must be a HASH/,
   "fail add scalar";
 
 {
@@ -271,7 +271,7 @@ throws_ok { $cart->add('') } qr/argument to add should be hash or hashref/,
 }
 
 throws_ok { $cart->add( TestObj->new ) }
-qr/not an Interchange6::Cart::Product/i, "add non-Product object";
+qr/Single parameters to new\(\) must be a HASH/, "add non-Product object";
 
 lives_ok {
     $product = Interchange6::Cart::Product->new(
@@ -427,7 +427,7 @@ throws_ok {
         { sku => 'ONE', name => "One", price => 1, quantity => 1, weight => 2 }
       )
 }
-qr/argument to seed must be an array reference/,
+qr/did not pass type constraint.+ArrayRef\[CartProduct\]/,
   "fail adding arg that is not array reference";
 
 cmp_ok( $cart->count,    '==', 0, "count is 0" );

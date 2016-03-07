@@ -97,6 +97,7 @@ has products => (
     # without disturbing what subclasses might expect of clear
     is  => 'rwp',
     isa => ArrayRef [ CartProduct ],
+    coerce => 1,
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
@@ -273,37 +274,13 @@ sub add {
     my $product = $_[0];
     my ( $index, $oldproduct, $update );
 
-    if ( !defined $product ) {
-        die "undefined argument passed to add";
-    }
-    elsif ( blessed($product) ) {
-        die "product argument is not an Interchange6::Cart::Product"
-          unless ( $product->isa('Interchange6::Cart::Product') );
-    }
-    else {
+    croak "undefined argument passed to add" unless defined $product;
 
-        my %args;
+    $product = CartProduct->coerce(@_) unless CartProduct->check($product);
 
-        if ( @_ % 2 ) {
-            if ( ref($product) eq 'HASH' ) {
-
-                # copy args
-                %args = %{$product};
-            }
-            else {
-                die "argument to add should be hash or hashref";
-            }
-        }
-        else {
-
-            %args = @_;
-        }
-
-        $product = Interchange6::Cart::Product->new(%args);
-    }
-
-   # cart may already contain an product with the same sku
-   # if so then we add quantity to existing product otherwise we add new product
+    # Cart may already contain an product with the same sku.
+    # If so then we add quantity to existing product otherwise we add new
+    # product.
 
     $index = $self->product_index( sub { $_->sku eq $product->sku } );
 
@@ -387,15 +364,15 @@ Remove product from the cart. Takes SKU of product to identify the product.
 sub remove {
     my ( $self, $arg ) = @_;
 
-    die "no argument passed to remove" unless defined $arg;
+    croak "no argument passed to remove" unless defined $arg;
 
     my $index = $self->product_index( sub { $_->sku eq $arg } );
 
-    die "sku $arg not found in cart" unless $index >= 0;
+    croak "sku $arg not found in cart" unless $index >= 0;
 
     # remove product from our array
     my $ret = $self->product_delete($index);
-    die "remove sku $arg failed" unless defined $ret;
+    croak "remove sku $arg failed" unless defined $ret;
 
     return $ret;
 }
@@ -420,23 +397,8 @@ On success returns L</products>.
 =cut
 
 sub seed {
-    my ( $self, $product_ref ) = @_;
-
-    die "argument to seed must be an array reference"
-      unless ref($product_ref) eq 'ARRAY';
-
-    # we can't use ->clear since subclasses might wrap that to do
-    # interesting things like remove products from cart in database
-    $self->_set_products([]);
-
-    my @products;
-    for my $args ( @{$product_ref} ) {
-        push @products, Interchange6::Cart::Product->new($args);
-    }
-
-    # if we got here then all products are good so put them in the cart
-    $self->product_push(@products);
-
+    my $self = shift;
+    $self->_set_products(@_);
     return $self->products;
 }
 
@@ -465,12 +427,12 @@ sub update {
         $sku = shift @args;
         $qty = shift @args;
 
-        die "sku not defined in arg to update" unless defined $sku;
+        croak "sku not defined in arg to update" unless defined $sku;
 
-        defined($qty) or die "quantity argument to update must be defined";
+        defined($qty) or croak "quantity argument to update must be defined";
 
         unless ( $product = $self->find($sku) ) {
-            die "Product for $sku not found in cart.";
+            croak "Product for $sku not found in cart.";
         }
 
         if ( $qty == 0 ) {

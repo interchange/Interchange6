@@ -3,19 +3,22 @@ package Interchange6::Types;
 use strict;
 use warnings;
 
-use Type::Library -base;
+use Type::Library -base, -declare => qw( Cart CartCost CartProduct );
 use Type::Utils -all;
 use Types::Standard -types;
 
 BEGIN {
-    extends "Types::Standard", "Types::Common::Numeric", "Types::Common::String"
+    extends "Types::Standard", "Types::Common::Numeric",
+      "Types::Common::String";
 }
 
-declare 'Cart', as InstanceOf['Interchange6::Cart'];
+class_type Cart, { class => 'Interchange6::Cart' };
 
-declare 'CartCost', as InstanceOf['Interchange6::Cart::Cost'];
+class_type CartCost, { class => 'Interchange6::Cart::Cost' };
+coerce CartCost, from Any, via { 'Interchange6::Cart::Cost'->new(@_) };
 
-declare 'CartProduct', as InstanceOf['Interchange6::Cart::Product'];
+class_type CartProduct, { class => 'Interchange6::Cart::Product' };
+coerce CartProduct, from Any, via { 'Interchange6::Cart::Product'->new(@_) };
 
 1;
 __END__
