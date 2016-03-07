@@ -23,20 +23,21 @@ When called without arguments returns an array reference of all costs associated
 has costs => (
     is          => 'ro',
     isa         => ArrayRef[CartCost],
+    coerce      => 1,
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
+        apply_cost  => 'push',
         clear_costs => 'clear',
         cost_get    => 'get',
         cost_set    => 'set',
         cost_count  => 'count',
-        cost_push   => 'push',
         get_costs   => 'elements',
     },
     init_arg => undef,
 );
 
-after 'clear_costs', 'cost_set', 'cost_push' => sub {
+after 'clear_costs', 'cost_set', 'apply_cost' => sub {
     shift->clear_total;
 };
 
@@ -100,13 +101,6 @@ Returns an element of the array of costs for the object by its index. You can al
 
 Returns the number of cost elements for the object.
 
-=head2 cost_push($cost)
-
-Like Perl's normal C<push> this adds the supplied L<Interchange::Cart::Cost>
-to L</costs>.
-
-This method also calls L</clear_total>.
-
 =head2 get_costs
 
 Returns all of the cost elements for the object as an array (not an arrayref).
@@ -125,7 +119,7 @@ predicate on L</total>.
 
 Apply cost to object. L</apply_cost> is a generic method typicaly used for taxes, discounts, coupons, gift certificates, etc.
 
-The cost is added using L</cost_push>.
+B<NOTE:> This method also calls L</clear_total>.
 
 B<Example:> Absolute cost
 
@@ -158,22 +152,15 @@ Same as relative cost, but it assumes that tax was included in the subtotal alre
 
 =cut
 
-sub apply_cost {
-    my $self = shift;
-    my $cost = $_[0];
+around apply_cost => sub {
+    my ( $orig, $self, @args ) = @_;
 
-    croak "argument to apply_cost undefined" unless defined($cost);
+    croak "argument to apply_cost undefined" unless defined $args[0];
 
-    if ( blessed($cost) ) {
-        croak( "Supplied cost not an Interchange6::Cart::Cost : " . ref($cost) )
-          unless $cost->isa('Interchange6::Cart::Cost');
-    }
-    else {
-        $cost = Interchange6::Cart::Cost->new(@_);
-    }
+    my $cost = CartCost->check( $args[0] ) ? $args[0] : CartCost->coerce(@args);
 
-    $self->cost_push($cost);
-}
+    $orig->($self, $cost);
+};
 
 =head2 cost
 

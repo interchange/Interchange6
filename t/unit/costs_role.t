@@ -38,7 +38,8 @@ cmp_ok( scalar $obj->get_costs, '==', 0, "get_costs is empty list" );
 throws_ok { $obj->apply_cost } qr/argument to apply_cost undefined/,
   "fail apply_cost with no args";
 
-throws_ok { $obj->apply_cost($obj) } qr/Supplied cost not an.+Cost/,
+throws_ok { $obj->apply_cost($obj) }
+qr{Single parameters to new\(\) must be a HASH ref data},
   "fail apply_cost bad obj as arg";
 
 lives_ok { $cost = Interchange6::Cart::Cost->new( name => "Cost1", amount => 12 ) }
@@ -54,7 +55,7 @@ cmp_ok( $obj->cost_count, '==', 1,  "cost_count is 1" );
 lives_ok { $cost = Interchange6::Cart::Cost->new( name => "Cost2", amount => 0.1, relative => 1 ) }
 "create a Cost object with name 'Cost2', amount 0.1 and relative => 1";
 
-lives_ok { $obj->cost_push($cost) } "cost_push Cost object";
+lives_ok { $obj->apply_cost($cost) } "cost_push Cost object";
 ok( !$obj->has_total, "has_total false" );
 
 cmp_ok( $obj->subtotal,   '==', 20, "subtotal is 20" );
