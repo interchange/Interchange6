@@ -6,17 +6,17 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use aliased 'Interchange6::Cart';
-use aliased 'Interchange6::Cart::Product';
+use Interchange6::Cart;
+use Interchange6::Cart::Product;
 
 my ( $cart, $product, $products, @products, %args );
 
-lives_ok { $cart = Cart->new } "cart with no args";
+lives_ok { $cart = Interchange6::Cart->new } "cart with no args";
 
 # immutable attrs
 
 lives_ok {
-    $product = Product->new( name => "One", sku => "SKU01", price => 10 )
+    $product = Interchange6::Cart::Product->new( name => "One", sku => "SKU01", price => 10 )
 }
 "create a product";
 
@@ -31,10 +31,10 @@ dies_ok { $cart->weight(1) } "weight is immutable";
 # id
 
 $args{id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/id/, "fail new with undef id";
+throws_ok { $cart = Interchange6::Cart->new(%args) } qr/id/, "fail new with undef id";
 
 $args{id} = '34w';
-lives_ok { $cart = Cart->new(%args) } "ok new with defined id";
+lives_ok { $cart = Interchange6::Cart->new(%args) } "ok new with defined id";
 
 throws_ok { $cart->set_id(undef) } qr/id/, "fail set_id(undef)";
 
@@ -43,13 +43,13 @@ lives_ok { $cart->set_id(12) } "ok set_id(12)";
 # name
 
 $args{name} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/name/, "fail new with undef name";
+throws_ok { $cart = Interchange6::Cart->new(%args) } qr/name/, "fail new with undef name";
 
 $args{name} = '';
-throws_ok { $cart = Cart->new(%args) } qr/name/, "fail new with empty name";
+throws_ok { $cart = Interchange6::Cart->new(%args) } qr/name/, "fail new with empty name";
 
 $args{name} = "Cart";
-lives_ok { $cart = Cart->new(%args) } "ok new with name Cart";
+lives_ok { $cart = Interchange6::Cart->new(%args) } "ok new with name Cart";
 
 throws_ok { $cart->rename(undef) } qr/name/, "fail rename(undef)";
 
@@ -67,7 +67,7 @@ ok( $cart->is_empty, "cart is_empty" );
 cmp_ok( $cart->count, '==', 0, "count is 0" );
 
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "One",
         sku      => "SKU01",
         price    => 10,
@@ -80,7 +80,7 @@ lives_ok {
 $args{products} = [$product];
 
 # passing value to products is ignored
-lives_ok { $cart = Cart->new(%args) } "new cart with 1 product";
+lives_ok { $cart = Interchange6::Cart->new(%args) } "new cart with 1 product";
 
 ok( $cart->is_empty, "cart is_empty" );
 
@@ -106,7 +106,7 @@ ok( $cart->has_total,    "has_total" );
 ok( $cart->has_weight,   "has_weight" );
 
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "Two",
         sku      => "SKU02",
         price    => 20,
@@ -137,7 +137,7 @@ lives_ok { $product = $cart->product_get(2) } "ok product_get(2)";
 ok( !defined $product, "not defined" );
 
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "Three",
         sku      => "SKU03",
         price    => 30,
@@ -168,7 +168,7 @@ lives_ok { $product = $cart->product_get(1) } "ok product_get(1)";
 cmp_ok( $product->name, 'eq', 'Three', "product name is Three" );
 
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "Four",
         sku      => "SKU04",
         price    => 40,
@@ -220,11 +220,11 @@ cmp_ok( $cart->weight,   '==', 0, "weight is 0" );
 # sessions_id
 
 $args{sessions_id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/sessions_id/,
+throws_ok { $cart = Interchange6::Cart->new(%args) } qr/sessions_id/,
   "fail new with undef sessions_id";
 
 $args{sessions_id} = '34w';
-lives_ok { $cart = Cart->new(%args) } "ok new with defined sessions_id";
+lives_ok { $cart = Interchange6::Cart->new(%args) } "ok new with defined sessions_id";
 
 throws_ok { $cart->set_sessions_id(undef) } qr/sessions_id/,
   "fail set_sessions_id(undef)";
@@ -240,11 +240,11 @@ ok( !defined $cart->sessions_id, "sessions_id is undef" );
 # users_id
 
 $args{users_id} = undef;
-throws_ok { $cart = Cart->new(%args) } qr/users_id/,
+throws_ok { $cart = Interchange6::Cart->new(%args) } qr/users_id/,
   "fail new with undef users_id";
 
 $args{users_id} = '34w';
-lives_ok { $cart = Cart->new(%args) } "ok new with defined users_id";
+lives_ok { $cart = Interchange6::Cart->new(%args) } "ok new with defined users_id";
 
 throws_ok { $cart->set_users_id(undef) } qr/users_id/,
   "fail set_users_id(undef)";
@@ -255,7 +255,7 @@ cmp_ok( $cart->users_id, 'eq', "12", "users_id is 12" );
 
 # add
 
-lives_ok { $cart = Cart->new } "create empty cart";
+lives_ok { $cart = Interchange6::Cart->new } "create empty cart";
 
 throws_ok { $cart->add } qr/undefined arg/i, "fail add with no args";
 
@@ -274,7 +274,7 @@ throws_ok { $cart->add( TestObj->new ) }
 qr/not an Interchange6::Cart::Product/i, "add non-Product object";
 
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "One",
         sku      => "SKU01",
         price    => 10,
@@ -296,7 +296,7 @@ cmp_ok( $cart->weight,   '==', 2,  "weight is 2" );
 # change the product that is already in the cart and that is not a valid
 # scenario so create new object
 lives_ok {
-    $product = Product->new(
+    $product = Interchange6::Cart::Product->new(
         name     => "One",
         sku      => "SKU01",
         price    => 10,
@@ -420,7 +420,7 @@ cmp_ok( $product->sku,   'eq', "SKU02", "product SKU02 returned" );
 
 # seed
 
-lives_ok { $cart = Cart->new } "new cart";
+lives_ok { $cart = Interchange6::Cart->new } "new cart";
 
 throws_ok {
     $cart->seed(
@@ -463,7 +463,7 @@ cmp_ok( $cart->subtotal, '==', 5,  "subtotal is 5" );
 cmp_ok( $cart->total,    '==', 5,  "total is 5" );
 cmp_ok( $cart->weight,   '==', 10, "weight is 10" );
 
-lives_ok { $cart = Cart->new } "new cart";
+lives_ok { $cart = Interchange6::Cart->new } "new cart";
 
 lives_ok { $cart->add( sku => "old", name => "old", price => 50 ) }
 "add a product which seed should remove";

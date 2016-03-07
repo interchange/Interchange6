@@ -5,7 +5,7 @@ package Interchange6::Role::Costs;
 use strict;
 use Interchange6::Cart::Cost;
 use Scalar::Util 'blessed';
-use Types::Standard qw/ArrayRef InstanceOf Num/;
+use Interchange6::Types -types;
 
 use Moo::Role;
 use MooX::HandlesVia;
@@ -24,7 +24,7 @@ When called without arguments returns an array reference of all costs associated
 
 has costs => (
     is          => 'ro',
-    isa         => ArrayRef [ InstanceOf ['Interchange::Cart::Cost'] ],
+    isa         => ArrayRef[CartCost],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {

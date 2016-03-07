@@ -1,4 +1,4 @@
-#! perl -T
+#! perl
 
 use strict;
 use warnings;
@@ -6,47 +6,47 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use aliased 'Interchange6::Cart';
-use aliased 'Interchange6::Cart::Product';
+use Interchange6::Cart;
+use Interchange6::Cart::Product;
 
 my ( $product, %args );
 
-throws_ok { $product = Product->new(%args) } qr/missing required arguments/i,
+throws_ok { $product = Interchange6::Cart::Product->new(%args) } qr/missing required arguments/i,
   "fail empty args";
 
 $args{name} = "some name";
-throws_ok { $product = Product->new(%args) } qr/missing required arguments/i,
+throws_ok { $product = Interchange6::Cart::Product->new(%args) } qr/missing required arguments/i,
   "fail no price or sku";
 
 $args{sku} = "SKU001";
-throws_ok { $product = Product->new(%args) } qr/missing required arguments/i,
+throws_ok { $product = Interchange6::Cart::Product->new(%args) } qr/missing required arguments/i,
   "fail no price";
 
 $args{price} = 23.45;
-lives_ok { $product = Product->new(%args) } "product created";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "product created";
 
 $args{name} = '';
-dies_ok { $product = Product->new(%args) } "fail empty name";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail empty name";
 
 $args{name} = "My Name";
-lives_ok { $product = Product->new(%args) } "ok name My Name";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok name My Name";
 
 $args{price} = 0;
-lives_ok { $product = Product->new(%args) } "ok price 0";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok price 0";
 
 $args{price} = -1;
-dies_ok { $product = Product->new(%args) } "fail negative price";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail negative price";
 
 $args{price} = "w";
-dies_ok { $product = Product->new(%args) } "fail non-numeric price";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail non-numeric price";
 
 $args{price} = 23.45;
 
 $args{sku} = '';
-dies_ok { $product = Product->new(%args) } "fail sku empty";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail sku empty";
 
 $args{sku} = "SKU01";
-lives_ok { $product = Product->new(%args) } "ok sku SKU01";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok sku SKU01";
 
 dies_ok { $product->id("new") } "id is immutable";
 dies_ok { $product->cart("new") } "cart is immutable";
@@ -62,18 +62,18 @@ dies_ok { $product->uri("new") } "uri is immutable";
 dies_ok { $product->weight(10) } "weight is immutable";
 
 $args{id} = "ww";
-dies_ok { $product = Product->new(%args) } "fail id not numeric";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail id not numeric";
 
 $args{id} = 12.3;
-dies_ok { $product = Product->new(%args) } "fail id not int";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail id not int";
 
 delete $args{id};
 
 $args{cart} = "banana";
-dies_ok { $product = Product->new(%args) } "fail bad cart type";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail bad cart type";
 
-$args{cart} = Cart->new;
-lives_ok { $product = Product->new(%args) } "ok good cart type";
+$args{cart} = Interchange6::Cart->new;
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok good cart type";
 
 lives_ok { $product->set_cart( $args{cart} ) } "ok set_cart";
 
@@ -90,16 +90,16 @@ dies_ok { $product->set_price("new") } "fail set_price('new')";
 cmp_ok( $product->selling_price, '==', 20, "selling price same as price" );
 
 $args{selling_price} = undef;
-dies_ok { $product = Product->new(%args) } "fail undef selling_price";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail undef selling_price";
 
 $args{selling_price} = -1;
-dies_ok { $product = Product->new(%args) } "fail -1 selling_price";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail -1 selling_price";
 
 $args{selling_price} = "new";
-dies_ok { $product = Product->new(%args) } "fail non-numeric selling_price";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail non-numeric selling_price";
 
 $args{selling_price} = 10;
-lives_ok { $product = Product->new(%args) } "ok good selling_price";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok good selling_price";
 
 cmp_ok( $product->selling_price, '==', 10, "selling price now 10" );
 
@@ -138,7 +138,7 @@ cmp_ok( $product->subtotal, '==', 15, "subtotal is 15" );
     price    => 20,
     quantity => 2,
 );
-lives_ok { $product = Product->new(%args) } "ok new product quantity 2";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok new product quantity 2";
 
 cmp_ok( $product->quantity, '==', 2,  "quantity is 2" );
 cmp_ok( $product->subtotal, '==', 40, "subtotal is 40" );
@@ -157,19 +157,19 @@ cmp_ok( $product->subtotal, '==', 60, "subtotal is 60" );
 cmp_ok( $product->total,    '==', 60, "total is 60" );
 
 $args{uri} = "someuri";
-lives_ok { $product = Product->new(%args) } "ok uri someuri";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok uri someuri";
 
 $args{weight} = "w";
-dies_ok { $product = Product->new(%args) } "fail weight non-numeric";
+dies_ok { $product = Interchange6::Cart::Product->new(%args) } "fail weight non-numeric";
 
 $args{weight} = 12.34;
-lives_ok { $product = Product->new(%args) } "ok weight 12.34";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok weight 12.34";
 
 ok( $product->is_canonical, "product is_canonical" );
 ok( !$product->is_variant,  "not product is_variant" );
 
 $args{canonical_sku} = "SKU2";
-lives_ok { $product = Product->new(%args) } "ok product with canonical_sku";
+lives_ok { $product = Interchange6::Cart::Product->new(%args) } "ok product with canonical_sku";
 
 ok( !$product->is_canonical, "not product is_canonical" );
 ok( $product->is_variant,    "product is_variant" );

@@ -3,9 +3,7 @@
 package Interchange6::Cart::Product;
 
 use strict;
-use Types::Common::Numeric qw/PositiveInt PositiveOrZeroNum/;
-use Types::Common::String qw/NonEmptyStr/;
-use Types::Standard qw/Defined HashRef HasMethods InstanceOf Int Maybe Num Str Undef/;
+use Interchange6::Types -types;
 
 use Moo;
 use MooX::HandlesVia;
@@ -54,7 +52,7 @@ A reference to the Cart object that this Cart::Product belongs to.
 
 has cart => (
     is      => 'ro',
-    isa     =>  Maybe[InstanceOf ['Interchange6::Cart']],
+    isa     =>  Maybe[Cart],
     default => undef,
     writer  => 'set_cart',
     weak_ref => 1,

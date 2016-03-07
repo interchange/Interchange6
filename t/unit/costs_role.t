@@ -5,7 +5,7 @@ use strict;
 
 use Test::More;
 use Test::Exception;
-use aliased 'Interchange6::Cart::Cost';
+use Interchange6::Cart::Cost;
 
 {
     package CostsConsumer;
@@ -41,7 +41,7 @@ throws_ok { $obj->apply_cost } qr/argument to apply_cost undefined/,
 throws_ok { $obj->apply_cost($obj) } qr/Supplied cost not an.+Cost/,
   "fail apply_cost bad obj as arg";
 
-lives_ok { $cost = Cost->new( name => "Cost1", amount => 12 ) }
+lives_ok { $cost = Interchange6::Cart::Cost->new( name => "Cost1", amount => 12 ) }
 "create a Cost object with name 'Cost1' and amount 12";
 
 lives_ok { $obj->apply_cost($cost) } "apply_cost Cost object";
@@ -51,7 +51,7 @@ cmp_ok( $obj->subtotal,   '==', 20, "subtotal is 20" );
 cmp_ok( $obj->total,      '==', 32, "total is 32" );
 cmp_ok( $obj->cost_count, '==', 1,  "cost_count is 1" );
 
-lives_ok { $cost = Cost->new( name => "Cost2", amount => 0.1, relative => 1 ) }
+lives_ok { $cost = Interchange6::Cart::Cost->new( name => "Cost2", amount => 0.1, relative => 1 ) }
 "create a Cost object with name 'Cost2', amount 0.1 and relative => 1";
 
 lives_ok { $obj->cost_push($cost) } "cost_push Cost object";
@@ -70,7 +70,7 @@ cmp_ok( $cost->current_amount, '==', 2,       "current_amount is 2" );
 cmp_ok( $cost->name,           'eq', "Cost2", "name is Cost2" );
 
 lives_ok {
-    $cost = Cost->new(
+    $cost = Interchange6::Cart::Cost->new(
         name      => "Cost3",
         amount    => 0.1,
         relative  => 1,
@@ -88,9 +88,9 @@ cmp_ok( $obj->cost_count, '==', 2,  "cost_count is 2" );
 ok( $obj->has_total, "has_total true" );
 
 lives_ok { @costs = $obj->get_costs } "get_costs";
-isa_ok( $costs[0], Cost, "obj at index 0" );
+isa_ok( $costs[0], 'Interchange6::Cart::Cost', "obj at index 0" );
 cmp_ok( $costs[0]->name, 'eq', "Cost1", "obj at index 0 name is Cost1" );
-isa_ok( $costs[1], Cost, "obj at index 1" );
+isa_ok( $costs[1], 'Interchange6::Cart::Cost', "obj at index 1" );
 cmp_ok( $costs[1]->name, 'eq', "Cost3", "obj at index 1 name is Cost3" );
 
 lives_ok { $obj->clear_costs } "clear_costs";

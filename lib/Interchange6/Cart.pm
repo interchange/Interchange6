@@ -13,9 +13,7 @@ use Carp;
 use Interchange6::Cart::Product;
 use Scalar::Util 'blessed';
 use Try::Tiny;
-use Types::Common::Numeric qw/PositiveOrZeroInt/;
-use Types::Common::String qw/NonEmptyStr/;
-use Types::Standard qw/ArrayRef InstanceOf Str/;
+use Interchange6::Types -types;
 
 use Moo;
 use MooX::HandlesVia;
@@ -98,7 +96,7 @@ has products => (
     # rwp allows us to clear out products in seed via _set_products
     # without disturbing what subclasses might expect of clear
     is  => 'rwp',
-    isa => ArrayRef [ InstanceOf ['Interchange6::Cart::Product'] ],
+    isa => ArrayRef [ CartProduct ],
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
@@ -301,7 +299,7 @@ sub add {
             %args = @_;
         }
 
-        $product = 'Interchange6::Cart::Product'->new(%args);
+        $product = Interchange6::Cart::Product->new(%args);
     }
 
    # cart may already contain an product with the same sku
