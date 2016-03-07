@@ -1,8 +1,5 @@
-# Interchange6::Cart::Product - Interchange6 cart product class
-
 package Interchange6::Cart::Product;
 
-use strict;
 use Interchange6::Types -types;
 
 use Moo;
