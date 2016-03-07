@@ -1,10 +1,6 @@
-# Interchange6::Cart::Cost - Interchange6 cart cost class
-
 package Interchange6::Cart::Cost;
 
-use strict;
-use Types::Common::String qw/NonEmptyStr/;
-use Types::Standard qw/Bool Defined Int Num/;
+use Interchange6::Types -types;
 
 use Moo;
 use namespace::clean;
