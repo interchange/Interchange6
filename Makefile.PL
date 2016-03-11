@@ -21,9 +21,11 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'namespace::clean' => 0,
+        'Module::Runtime' => 0,
         'Moo' => '1.004005',
         'MooseX::CoverableModifiers' => 0.30,
         'MooX::HandlesVia' => 0,
+        'Safe::Isa' => 0,
         'Type::Tiny' => '0.038',
     },
     dist          => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
