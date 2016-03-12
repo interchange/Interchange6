@@ -8,7 +8,8 @@ Interchange6::Cart - Cart class for Interchange6 Shop Machine
 
 use Carp;
 use Interchange6::Types -types;
-use Interchange6::Cart::Product;
+use Module::Runtime 'use_module';
+use Safe::Isa;
 
 use Moo;
 use MooX::HandlesVia;
@@ -108,6 +109,19 @@ has products => (
         product_set    => 'set',
     },
     init_arg => undef,
+);
+
+=head2 product_class
+
+To allow use of a subclassed L<Interchange6::Cart::Product>. Defaults to
+C<Interchange6::Cart::Product>.
+
+=cut
+
+has product_class => (
+    is      => 'ro',
+    isa     => Str,
+    default => 'Interchange6::Cart::Product',
 );
 
 =head2 sessions_id
@@ -271,7 +285,8 @@ sub add {
 
     croak "undefined argument passed to add" unless defined $product;
 
-    $product = CartProduct->coerce(@_) unless CartProduct->check($product);
+    $product = use_module( $self->product_class )->new(@_)
+      unless $product->$_isa( $self->product_class );
 
     # Cart may already contain an product with the same sku.
     # If so then we add quantity to existing product otherwise we add new
