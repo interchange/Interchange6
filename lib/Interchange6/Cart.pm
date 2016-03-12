@@ -93,7 +93,6 @@ has products => (
     # without disturbing what subclasses might expect of clear
     is  => 'rwp',
     isa => ArrayRef [ CartProduct ],
-    coerce => 1,
     default     => sub { [] },
     handles_via => 'Array',
     handles     => {
@@ -407,8 +406,18 @@ On success returns L</products>.
 =cut
 
 sub seed {
-    my $self = shift;
-    $self->_set_products(@_);
+    my ( $self, $product_ref ) = @_;
+
+    croak "argument to seed must be an array reference"
+      unless ref($product_ref) eq 'ARRAY';
+
+    my $product_class = use_module( $self->product_class );
+
+    my @products;
+    for my $args ( @{$product_ref} ) {
+        push @products, $product_class->new($args);
+    }
+    $self->_set_products( \@products );
     return $self->products;
 }
 

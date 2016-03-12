@@ -427,7 +427,7 @@ throws_ok {
         { sku => 'ONE', name => "One", price => 1, quantity => 1, weight => 2 }
       )
 }
-qr/did not pass type constraint.+ArrayRef\[CartProduct\]/,
+qr/argument to seed must be an array reference/,
   "fail adding arg that is not array reference";
 
 cmp_ok( $cart->count,    '==', 0, "count is 0" );
