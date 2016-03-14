@@ -1,5 +1,22 @@
 Revision history for Interchange6
 
+0.110 Mon Mar 14 20:54:20 2016 CET
+
+    [ENHANCEMENTS]
+
+    * Add product_class attribute to cart class (Peter Mottram).
+    * `after quantity` modifier in Product should be `after set_quantity`
+      (Peter Mottram).
+    * Remove cost_push handle from Role::Costs->costs (Peter Mottram).
+    * Use Carp::croak in Role::Cost (Peter Mottram).
+    * Reintroduce Interchange6::Types type library (Peter Mottram).
+    * Improve workaround for Type::Tiny::XS bug
+      (Peter Mottram, GH #28).
+    * Change Cart's find method to use HandlesVia Array's first
+      (Peter Mottram).
+    * Use PositiveOrZeroInt type check for quantity arg to update in cart
+      (Peter Mottram).
+
 0.103 Fri Feb 26 10:45:42 2016 CET
 
     [ENHANCEMENTS]
