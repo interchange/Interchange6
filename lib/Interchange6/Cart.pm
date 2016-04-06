@@ -291,21 +291,30 @@ sub add {
     # If so then we add quantity to existing product otherwise we add new
     # product.
 
-    $index = $self->product_index( sub { $_->sku eq $product->sku } );
+    if ( $product->should_combine_by_sku ) {
 
-    if ( $index >= 0 && $product->should_combine_by_sku ) {
+        # product can be combined with existing product so look for one
+        # that also allows combining
 
-        # product already exists in cart so we need to add new quantity to old
+        $index = $self->product_index(
+            sub { $_->sku eq $product->sku && $_->should_combine_by_sku } );
 
-        $oldproduct = $self->product_get($index);
+        if ( $index >= 0 ) {
 
-        $product->set_quantity( $oldproduct->quantity + $product->quantity );
+          # product already exists in cart so we need to add new quantity to old
 
-        $self->product_set( $index, $product );
+            $oldproduct = $self->product_get($index);
 
-        $update = 1;
+            $product->set_quantity(
+                $oldproduct->quantity + $product->quantity );
+
+            $self->product_set( $index, $product );
+
+            $update = 1;
+        }
     }
-    else {
+
+    if ( !$update ) {
 
         # a new product for this cart
 
