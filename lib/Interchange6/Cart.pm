@@ -101,6 +101,7 @@ has products => (
         is_empty       => 'is_empty',
         product_first  => 'first',
         product_get    => 'get',
+        product_grep   => 'grep',
         product_index  => 'first_index',
         products_array => 'elements',
         product_delete => 'delete',
@@ -243,6 +244,10 @@ Deletes the product at the specified index.
 
 Returns the product at the specified index.
 
+=head2 product_grep( sub {...})
+
+This method returns every element matching a given criteria, just like Perl's core grep function. This method requires a subroutine which implements the matching logic. The returned list is provided as a Collection::Array object.
+
 =head2 product_index( sub {...})
 
 This method returns the index of the first matching product in the cart. The matching is done with a subroutine reference you pass to this method. The subroutine will be called against each element in the array until one matches or all elements have been checked.
@@ -331,7 +336,7 @@ Searches for a cart product with the given SKU.
 Returns cart product in case of sucess or undef on failure.
 
   if ($product = $cart->find(9780977920174)) {
-      print "Quantity: $product->{quantity}.\n";
+      print "Quantity: $product->quantity.\n";
   }
 
 =cut
