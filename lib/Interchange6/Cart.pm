@@ -395,6 +395,8 @@ sub remove {
     my %args = ref($_[0]) eq '' ? ( sku => $_[0] ) : %{ $_[0] };
 
     if ( defined $args{index} ) {
+        croak "bad index supplied to remove" if $args{index} !~ /^\d+$/;
+
         $index = $args{index};
     }
     elsif ( defined $args{id} ) {
@@ -408,6 +410,9 @@ sub remove {
         elsif ( @cart_products > 1 ) {
             croak "Cannot remove product with non-unique id";
         }
+        else {
+            croak "Product with id $args{id} not found in cart";
+        }
     }
     elsif ( defined $args{sku} ) {
         my @cart_products =
@@ -419,15 +424,18 @@ sub remove {
         elsif ( @cart_products > 1 ) {
             croak "Cannot remove product with non-unique sku";
         }
+        else {
+            croak "Product with sku $args{sku} not found in cart";
+        }
     }
     else {
         croak "Args to remove must include one of: index, id or sku";
     }
 
-    croak "Product not found in cart" unless defined $index && $index >= 0;
-
     my $ret = $self->product_delete($index);
 
+    # if we got here then product_delete really shouldn't fail
+    # uncoverable branch true
     croak "remove failed" unless defined $ret;
 
     $self->clear_subtotal;
