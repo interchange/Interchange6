@@ -166,13 +166,11 @@ sub _build_subtotal {
     return sprintf( "%.2f", $subtotal );
 }
 
-after 'add', 'clear', 'product_push', 'product_set', 'product_delete', 'remove',
-  'seed', 'update' => sub {
-
+after 'add', 'clear', 'product_push', 'product_set', 'product_delete', 'remove', 'seed', 'update' => sub {
     my $self = shift;
     $self->clear_subtotal;
     $self->clear_weight;
-  };
+};
 
 after 'clear_subtotal' => sub {
     shift->clear_total;
