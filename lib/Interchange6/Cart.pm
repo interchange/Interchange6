@@ -444,11 +444,27 @@ Parameters are pairs of SKUs and quantities, e.g.
   $cart->update(9780977920174 => 5,
                 9780596004927 => 3);
 
+Or a list of hash references, e.g.
+
+  $cart->update(
+      { index => 3,      quantity => 2 },
+      { id    => 73652,  quantity => 1 },
+      { sku   => 'AJ12', quantity => 4 },
+  );
+
 A quantity of zero is equivalent to removing this product.
 
 Returns an array of updated products that are still in the cart.
 Products removed via quantity 0 or products for which quantity has not
 changed will not be returned.
+
+If you have products that cannot be combined in the cart (see
+L<Interchange6::Cart::Product/combine> and 
+L<Interchange6::Cart::Product/should_combine_by_sku>) then it is possible to
+have multiple cart products with the same sku. In this case the arguments
+to L</update> must be a list of hash references using either
+L<Interchange6::Cart::Product/id> or C<index> where C<index> is
+the zero-based index of the product within L</products>.
 
 =cut
 
@@ -457,18 +473,92 @@ sub update {
     my @products;
 
   ARGS: while ( @args > 0 ) {
-        my $sku = shift @args;
-        my $qty = shift @args;
 
-        croak "sku not defined in arg to update" unless defined $sku;
+        my ( $product, $sku, $qty );
 
-        defined($qty) or croak "quantity argument to update must be defined";
+        if ( ref( $args[0] ) eq '' ) {
 
-        my $product = $self->find($sku);
-        croak "Product for $sku not found in cart." unless $product;
+            # original API expecting list of sku/qty pairs
+
+            $sku = shift @args;
+            $qty = shift @args;
+
+            croak "sku not defined in arg to update" unless defined $sku;
+
+            my @cart_products = $self->product_grep( sub { $_->sku eq $sku } );
+
+            if ( @cart_products == 0 ) {
+                croak "Product for $sku not found in cart.";
+            }
+            elsif ( @cart_products == 1 ) {
+
+                # one matching product
+                $product = $cart_products[0];
+            }
+            else {
+                croak "More than one product in cart with sku $sku. ",
+                  "You must pass a hash reference to the update method ",
+                  "including the cart position/index to update this sku.";
+            }
+
+        }
+        elsif ( ref( $args[0] ) eq 'HASH' ) {
+
+            # a hash reference of items that should reference a single product
+
+            my %selectors = %{ shift @args };
+
+            $qty = delete $selectors{quantity};
+
+            if ( defined $selectors{index} ) {
+
+                # select by position in cart
+                $product = $self->product_get( $selectors{index} );
+            }
+            else {
+                my @cart_products;
+
+                if ( defined $selectors{id} ) {
+
+                    # search by product id
+                    @cart_products =
+                      $self->product_grep( sub { $_->id eq $selectors{id} } );
+                }
+                elsif ( defined $selectors{sku} ) {
+
+                    # search by product sku
+                    @cart_products =
+                      $self->product_grep( sub { $_->id eq $selectors{sku} } );
+                }
+                else {
+                    croak "Args to update must include index, id or sku";
+                }
+
+                if ( @cart_products == 0 ) {
+                    croak "Product not found in cart for update.";
+                }
+                elsif ( @cart_products == 1 ) {
+
+                    # one matching product
+                    $product = $cart_products[0];
+                }
+                else {
+                    croak "More than one product found in cart for update.",;
+                }
+            }
+
+        }
+        else {
+            croak "Unexpected ", ref( $args[0] ), " argument to update";
+        }
+
+        croak "Product not found for update" unless $product;
+
+        defined($qty) && ref($qty) eq ''
+          or croak "quantity argument to update must be defined";
 
         if ( $qty == 0 ) {
-            $self->remove($sku);
+            $self->remove( $product->sku );
             next;
         }
 
