@@ -166,7 +166,7 @@ sub _build_subtotal {
     return sprintf( "%.2f", $subtotal );
 }
 
-after 'add', 'clear', 'product_push', 'product_set', 'product_delete', 'remove', 'seed', 'update' => sub {
+after 'clear', 'product_push', 'product_set', 'product_delete' => sub {
     my $self = shift;
     $self->clear_subtotal;
     $self->clear_weight;
@@ -325,6 +325,8 @@ sub add {
         $self->product_push($product);
     }
 
+    $self->clear_subtotal;
+    $self->clear_weight;
     return $product;
 }
 
@@ -395,6 +397,8 @@ sub remove {
     my $ret = $self->product_delete($index);
     croak "remove sku $arg failed" unless defined $ret;
 
+    $self->clear_subtotal;
+    $self->clear_weight;
     return $ret;
 }
 
@@ -430,6 +434,9 @@ sub seed {
         push @products, $product_class->new($args);
     }
     $self->_set_products( \@products );
+
+    $self->clear_subtotal;
+    $self->clear_weight;
     return $self->products;
 }
 
@@ -566,6 +573,9 @@ sub update {
         $product->set_quantity($qty);
         push @products, $product;
     }
+
+    $self->clear_subtotal;
+    $self->clear_weight;
     return @products;
 }
 
