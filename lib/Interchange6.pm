@@ -53,7 +53,7 @@ Please anticipate API changes in this early state of development.
 
 =head1 ACKNOWLEDGEMENTS
 
-Hunter McMillen, GH #31, #33.
+Hunter McMillen, GH #31, #33, #34.
 
 =head1 AUTHORS
 
