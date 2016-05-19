@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Warnings 0.005;
 
 use Interchange6::Cart;
 use Interchange6::Cart::Product;
@@ -412,7 +413,7 @@ throws_ok { $cart->remove(undef) } qr/no argument/i,
   "fail remove with undef arg";
 cmp_ok( $cart->count, '==', 1, "count is 1" );
 
-throws_ok { $cart->remove("badsku") } qr/Product not found in cart/,
+throws_ok { $cart->remove("badsku") } qr/sku badsku not found in cart/,
   "fail remove non-existant sku";
 cmp_ok( $cart->count, '==', 1, "count is 1" );
 
@@ -423,6 +424,78 @@ cmp_ok( $cart->subtotal, '==', 0,       "subtotal is 0" );
 cmp_ok( $cart->total,    '==', 0,       "total is 0" );
 cmp_ok( $cart->weight,   '==', 0,       "weight is 0" );
 cmp_ok( $product->sku,   'eq', "SKU02", "product SKU02 returned" );
+
+lives_ok {
+    $cart->add(
+        name    => "One",
+        sku     => "SKU01",
+        price   => 10,
+        combine => 0,
+      )
+}
+"Add product One with combine => 0";
+
+lives_ok {
+    $cart->add(
+        id      => 1,
+        name    => "One",
+        sku     => "SKU01",
+        price   => 10,
+        combine => 1,
+      )
+}
+"Add product One with combine => 1";
+
+lives_ok {
+    $cart->add(
+        id    => 1,
+        name  => "Two",
+        sku   => "SKU02",
+        price => 20,
+      )
+}
+"Add product Two";
+
+cmp_ok( $cart->count,    '==', 3, "count is 3" );
+cmp_ok( $cart->quantity, '==', 3, "quantity is 3" );
+
+throws_ok { $cart->remove('SKU01') }
+qr/Cannot remove product with non-unique sku/, "remove SKU01 dies";
+
+throws_ok { $cart->remove( { sku => 'SKU01' } ) }
+qr/Cannot remove product with non-unique sku/, "remove sku => SKU01 dies";
+
+throws_ok { $cart->remove( { id => 2 } ) }
+qr/Product with id 2 not found in cart/, "remove id => 2 dies";
+
+throws_ok { $cart->remove( { id => 1 } ) }
+qr/Cannot remove product with non-unique id/, "remove id => 1 dies";
+
+lives_ok { $cart->remove( { index => 1 } ) } "remove index => 1 lives";
+
+cmp_ok( $cart->count,    '==', 2, "count is 2" );
+cmp_ok( $cart->quantity, '==', 2, "quantity is 2" );
+
+lives_ok { $cart->remove( { id => 1 } ) } "remove id => 1 lives";
+
+cmp_ok( $cart->count,    '==', 1, "count is 1" );
+cmp_ok( $cart->quantity, '==', 1, "quantity is 1" );
+
+throws_ok { $cart->remove( { index => 2.2 } ) }
+qr/bad index supplied to remove/,
+  "remove index => 2.2 dies";
+
+throws_ok { $cart->remove( { index => 'F' } ) }
+qr/bad index supplied to remove/,
+  "remove index => 'F' dies";
+
+throws_ok { $cart->remove( { index => -1 } ) }
+qr/bad index supplied to remove/,
+  "remove index => -1 dies";
+
+throws_ok { $cart->remove( { foo => 'bar' } ) }
+qr/Args to remove must include one of: index, id or sku/,
+  "remove foo => bar dies";
 
 # seed
 
