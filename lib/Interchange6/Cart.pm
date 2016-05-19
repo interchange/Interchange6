@@ -402,7 +402,8 @@ sub remove {
           $self->product_grep( sub { defined $_->id && $_->id eq $args{id} } );
 
         if ( @cart_products == 1 ) {
-            $index = $self->product_index( sub { $_->id eq $args{id} } );
+            $index = $self->product_index(
+                sub { defined $_->id && $_->id eq $args{id} } );
         }
         elsif ( @cart_products > 1 ) {
             croak "Cannot remove product with non-unique id";
