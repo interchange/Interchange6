@@ -406,7 +406,7 @@ throws_ok { $cart->remove(undef) } qr/no argument/i,
   "fail remove with undef arg";
 cmp_ok( $cart->count, '==', 1, "count is 1" );
 
-throws_ok { $cart->remove("badsku") } qr/sku badsku not found/i,
+throws_ok { $cart->remove("badsku") } qr/Product not found in cart/,
   "fail remove non-existant sku";
 cmp_ok( $cart->count, '==', 1, "count is 1" );
 

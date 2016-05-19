@@ -378,24 +378,50 @@ sub quantity {
     return $qty;
 }
 
-=head2 remove($sku)
+=head2 remove
 
 Remove product from the cart. Takes SKU of product to identify the product.
+
+    $self->remove('ABC123');
 
 =cut
 
 sub remove {
-    my ( $self, $arg ) = @_;
+    my $self = shift;
+    my $index;
 
-    croak "no argument passed to remove" unless defined $arg;
+    croak "no argument passed to remove" unless @_ && defined($_[0]);
 
-    my $index = $self->product_index( sub { $_->sku eq $arg } );
+    my %args = ref($_[0]) eq '' ? ( sku => $_[0] ) : %{ $_[0] };
 
-    croak "sku $arg not found in cart" unless $index >= 0;
+    if ( defined $args{index} ) {
+        $index = $args{index};
+    }
+    elsif ( defined $args{id} ) {
+        my @cart_products =
+          $self->product_grep( sub { $_->id eq $args{id} } );
 
-    # remove product from our array
+        if ( @cart_products == 1 ) {
+            $index = $self->product_index( sub { $_->id eq $args{id} } );
+        }
+    }
+    elsif ( defined $args{sku} ) {
+        my @cart_products =
+          $self->product_grep( sub { $_->sku eq $args{sku} } );
+
+        if ( @cart_products == 1 ) {
+            $index = $self->product_index( sub { $_->sku eq $args{sku} } );
+        }
+    }
+    else {
+        croak "Args to remove must include one of: index, id or sku";
+    }
+
+    croak "Product not found in cart" unless defined $index && $index >= 0;
+
     my $ret = $self->product_delete($index);
-    croak "remove sku $arg failed" unless defined $ret;
+
+    croak "remove failed" unless defined $ret;
 
     $self->clear_subtotal;
     $self->clear_weight;
