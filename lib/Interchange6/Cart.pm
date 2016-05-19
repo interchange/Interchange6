@@ -285,7 +285,7 @@ The product is an L<Interchange6::Cart::Product> or a hash (reference) of produc
 sub add {
     my $self    = shift;
     my $product = $_[0];
-    my ( $index, $oldproduct, $update );
+    my $update;
 
     croak "undefined argument passed to add" unless defined $product;
 
@@ -301,14 +301,14 @@ sub add {
         # product can be combined with existing product so look for one
         # that also allows combining
 
-        $index = $self->product_index(
+        my $index = $self->product_index(
             sub { $_->sku eq $product->sku && $_->should_combine_by_sku } );
 
         if ( $index >= 0 ) {
 
           # product already exists in cart so we need to add new quantity to old
 
-            $oldproduct = $self->product_get($index);
+            my $oldproduct = $self->product_get($index);
 
             $product->set_quantity(
                 $oldproduct->quantity + $product->quantity );
@@ -454,19 +454,18 @@ changed will not be returned.
 
 sub update {
     my ( $self, @args ) = @_;
-    my ( $sku, $qty, $product, $update, @products );
+    my @products;
 
   ARGS: while ( @args > 0 ) {
-        $sku = shift @args;
-        $qty = shift @args;
+        my $sku = shift @args;
+        my $qty = shift @args;
 
         croak "sku not defined in arg to update" unless defined $sku;
 
         defined($qty) or croak "quantity argument to update must be defined";
 
-        unless ( $product = $self->find($sku) ) {
-            croak "Product for $sku not found in cart.";
-        }
+        my $product = $self->find($sku);
+        croak "Product for $sku not found in cart." unless $product;
 
         if ( $qty == 0 ) {
             $self->remove($sku);
