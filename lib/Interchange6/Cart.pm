@@ -399,10 +399,13 @@ sub remove {
     }
     elsif ( defined $args{id} ) {
         my @cart_products =
-          $self->product_grep( sub { $_->id eq $args{id} } );
+          $self->product_grep( sub { defined $_->id && $_->id eq $args{id} } );
 
         if ( @cart_products == 1 ) {
             $index = $self->product_index( sub { $_->id eq $args{id} } );
+        }
+        elsif ( @cart_products > 1 ) {
+            croak "Cannot remove product with non-unique id";
         }
     }
     elsif ( defined $args{sku} ) {
@@ -411,6 +414,9 @@ sub remove {
 
         if ( @cart_products == 1 ) {
             $index = $self->product_index( sub { $_->sku eq $args{sku} } );
+        }
+        elsif ( @cart_products > 1 ) {
+            croak "Cannot remove product with non-unique sku";
         }
     }
     else {
@@ -552,14 +558,14 @@ sub update {
                 if ( defined $selectors{id} ) {
 
                     # search by product id
-                    @cart_products =
-                      $self->product_grep( sub { $_->id eq $selectors{id} } );
+                    @cart_products = $self->product_grep(
+                        sub { defined $_->id && $_->id eq $selectors{id} } );
                 }
                 elsif ( defined $selectors{sku} ) {
 
                     # search by product sku
                     @cart_products =
-                      $self->product_grep( sub { $_->id eq $selectors{sku} } );
+                      $self->product_grep( sub { $_->sku eq $selectors{sku} } );
                 }
                 else {
                     croak "Args to update must include index, id or sku";
