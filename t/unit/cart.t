@@ -88,7 +88,13 @@ cmp_ok( $cart->count, '==', 0, "count is 0" );
 
 delete $args{products};
 
+ok !defined $cart->find('SKU01'), "find SKU01 returns undef (not yet added)";
+
 lives_ok { $cart->product_push($product) } "ok product_push";
+
+lives_ok { $product = $cart->find('SKU01') } "find SKU01 lives";
+isa_ok $product, 'Interchange6::Cart::Product', 'product';
+cmp_ok $product->sku, 'eq', 'SKU01', 'product sku is SKU01';
 
 ok( !$cart->is_empty,     "not cart is_empty" );
 ok( !$cart->has_subtotal, "not has_subtotal" );
