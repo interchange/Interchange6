@@ -559,6 +559,8 @@ sub update {
             if ( defined $selectors{index} ) {
 
                 # select by position in cart
+                croak "bad index for update" if $selectors{index} !~ /^\d+$/;
+
                 $product = $self->product_get( $selectors{index} );
             }
             else {

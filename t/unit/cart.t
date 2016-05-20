@@ -404,6 +404,75 @@ cmp_ok( $cart->subtotal, '==', 40, "subtotal is 40" );
 cmp_ok( $cart->total,    '==', 40, "total is 40" );
 cmp_ok( $cart->weight,   '==', 8,  "weight is 8" );
 
+lives_ok {
+    $cart->add(
+        name    => "One",
+        sku     => "SKU01",
+        price   => 10,
+        combine => 0,
+      )
+}
+"Add product SKU01 with combine => 0";
+
+lives_ok {
+    $cart->add(
+        id      => 1,
+        name    => "One",
+        sku     => "SKU01",
+        price   => 10,
+        combine => 1,
+      )
+}
+"Add product SKU01 with combine => 1";
+
+cmp_ok( $cart->quantity, '==', 4,  "cart quantity is 4" );
+
+throws_ok { $cart->update( SKU01 => 2 ) }
+qr/More than one product in cart with sku SKU01/, "update SKU01 dies";
+
+throws_ok { $cart->update( { sku => 'SKU01', quantity => 2 } ) }
+qr/More than one product found in cart for update/,
+  "update SKU01 using hashref args dies";
+
+throws_ok { $cart->update( {} ) }
+qr/Args to update must include index, id or sku/,
+  "update with empty hashref dies";
+
+throws_ok { $cart->update( [] ) } qr/Unexpected ARRAY argument to update/,
+  "update with arrayref as arg dies";
+
+throws_ok { $cart->update( { index => 'F', quantity => 1 } ) }
+qr/bad index for update/, "update with string value to index dies";
+
+lives_ok { $cart->update( { index => 0, quantity => 3 } ) }
+"update index 0 with quantity 3 lives";
+
+cmp_ok( $cart->quantity, '==', 5,  "cart quantity is 5" );
+
+throws_ok { $cart->update( { index => 0 } ) }
+qr/quantity argument to update must be defined/,
+  "update index 0 with no quantity dies";
+
+throws_ok { $cart->update( { id => 7 } ) }
+qr/Product not found in cart for update/,
+  "update non-existant id 7 dies";
+
+lives_ok { $cart->update( { id => 1, quantity => 2 } ) }
+  "update id 1 to quantity 2 lives";
+
+cmp_ok( $cart->quantity, '==', 6,  "cart quantity is 6" );
+
+throws_ok { $cart->update({index => 0, quantity => []}) }
+qr/quantity argument to update must be defined/,
+"update with value of quantity as arrayref dies";
+
+throws_ok { $cart->update({index => 4}) }
+qr/Product not found for update/,
+"update with non-existant index dies";
+
+lives_ok { $cart->remove({ index => 2 }) } "remove product at index 2";
+lives_ok { $cart->remove({ index => 1 }) } "remove product at index 1";
+
 # remove
 
 throws_ok { $cart->remove } qr/no argument/i, "fail remove with no args";
