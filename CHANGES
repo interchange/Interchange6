@@ -1,6 +1,15 @@
 Revision history for Interchange6
 
-0.110 Mon Mar 14 20:54:20 2016 CET
+0.120 Mon May 23 10:19:42 2016 CEST
+
+    [ENHANCEMENTS]
+
+    * Improve arg checking in Cart->remove (Peter Mottram).
+    * Allow cart remove using id or index as well as sku (Peter Mottram).
+    * Extend cart update method to allow hashref args for index/id
+      (Peter Mottram).
+    * Add product_grep methot to cart class (Peter Mottram).
+    * Add combine attribute to product class (Hunter McMillen, GH #34).
 
     [ENHANCEMENTS]
 
