@@ -121,14 +121,16 @@ cmp_ok( $cost, "==", 2, "amount is good" );
 throws_ok { $obj->cost } qr/position or name required/,
   "fail call cost with no args";
 
-throws_ok { $obj->cost(2) } qr/Bad argument to cost/,
-  "fail call cost with index that doesn't exist";
+lives_ok { $cost = $obj->cost(2) }
+  "call cost with index that doesn't exist lives";
+ok !defined $cost, "returned undef";
 
 throws_ok { $obj->cost("") } qr/Bad argument to cost/,
   "fail call cost with empty name";
 
-throws_ok { $obj->cost("BadName") } qr/Bad argument to cost/,
-  "fail call cost with name that doesn't exist";
+lives_ok { $cost = $obj->cost("BadName") }
+  "call cost with name that doesn't exist lives";
+ok !defined $cost, "returned undef";
 
 lives_ok { $obj->clear_costs } "clear_costs";
 

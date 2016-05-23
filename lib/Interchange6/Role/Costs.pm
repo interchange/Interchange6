@@ -176,6 +176,8 @@ B<Example:> Return tax value by position
 
 Returns the cost that was first applied to subtotal. By increasing the number you can retrieve other costs applied.
 
+Returns undef if the cost cannot be found.
+
 =cut
 
 sub cost {
@@ -197,6 +199,9 @@ sub cost {
                 }
             }
         }
+        else {
+            croak "Bad argument to cost";
+        }
     }
     else {
         croak "Either position or name required as argument to cost";
@@ -207,7 +212,8 @@ sub cost {
         $self->total;
     }
     else {
-        croak "Bad argument to cost: " . $loc;
+        # not found
+        return undef;
     }
 
     return $cost->current_amount;
